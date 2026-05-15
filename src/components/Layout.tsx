@@ -16,18 +16,18 @@ export function Layout() {
 
   const navItems = [
     { name: 'Khám phá', path: '/', icon: Home },
+    { name: 'Bài học', path: '/lessons', icon: BookOpen },
     { name: 'Lộ trình', path: '/path', icon: Route },
     { name: 'Khóa học', path: '/teacher', icon: GraduationCap },
     { name: 'Trợ lý', path: '/assistant', icon: MessageSquare },
-    { name: 'Phát âm', path: '/practice', icon: Mic },
     { name: 'Hồ sơ', path: '/profile', icon: Settings },
   ];
 
   // Các mục hiển thị trên taskbar mobile
   const taskbarItems = [
     { name: 'Khám phá', path: '/', icon: Home },
+    { name: 'Bài học', path: '/lessons', icon: BookOpen },
     { name: 'Khóa học', path: '/teacher', icon: GraduationCap },
-    { name: 'Trợ lý', path: '/assistant', icon: MessageSquare },
   ];
 
   return (

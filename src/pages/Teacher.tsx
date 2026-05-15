@@ -8,9 +8,9 @@ import { useStore } from '@/src/store/useStore';
 import { useNavigate } from 'react-router-dom';
 
 export function Teacher() {
-  const { progress } = useStore();
+  const { progress, setTeacherHistory } = useStore();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(progress.teacherHistory || []);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -34,6 +34,10 @@ Hãy sử dụng format Markdown tuyệt đẹp. Luôn giữ thái độ chuẩn
       ]);
     }
   }, [progress.geminiApiKey, messages.length]);
+
+  useEffect(() => {
+    setTeacherHistory(messages);
+  }, [messages, setTeacherHistory]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

@@ -1,11 +1,42 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { useStore } from '@/src/store/useStore';
-import { User, Trophy, Flame, Target } from 'lucide-react';
+import { User, Trophy, Flame, Target, Database, Activity, Image as ImageIcon, MessageSquare } from 'lucide-react';
+import { get, set } from 'idb-keyval';
+import { cn } from '@/src/lib/utils';
 
 export function Profile() {
   const { progress, setTargetLanguage, setGeminiApiKey } = useStore();
+  const [dbStatus, setDbStatus] = useState<'checking' | 'active' | 'inactive'>('checking');
+  const [apiActivity, setApiActivity] = useState<{
+    gemini: 'idle' | 'generating_text' | 'generating_image',
+    pollinations: 'idle' | 'generating_text' | 'generating_image'
+  }>({
+    gemini: 'idle',
+    pollinations: 'idle'
+  });
+
+  useEffect(() => {
+    // Check IndexedDB
+    const checkIDB = async () => {
+      try {
+        await set('__test_db__', 'test');
+        const val = await get('__test_db__');
+        if (val === 'test') {
+          setDbStatus('active');
+        } else {
+          setDbStatus('inactive');
+        }
+      } catch (e) {
+        setDbStatus('inactive');
+      }
+    };
+    checkIDB();
+
+    // Simulating checking API status (can be hooked to real API service interceptors in the future)
+    // For now we just show idle.
+  }, []);
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
@@ -76,6 +107,103 @@ export function Profile() {
               onChange={(e) => setGeminiApiKey(e.target.value)}
             />
             <p className="text-xs text-[#5a5a40]/60">API Key sẽ chỉ được lưu cục bộ trên trình duyệt của bạn.</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-8 space-y-6">
+          <h3 className="font-serif text-2xl font-bold text-[#5a5a40] flex items-center gap-2">
+            <Activity className="w-6 h-6 text-[#d4a373]" />
+            Trạng thái Hệ thống
+          </h3>
+
+          <div className="space-y-4">
+            {/* IndexedDB Status */}
+            <div className="flex items-center justify-between p-4 bg-[#fcfaf7] border border-[#5a5a40]/10 rounded-[16px]">
+              <div className="flex items-center gap-3">
+                <div className="bg-[#faedcd] p-2 rounded-full text-[#d4a373]">
+                  <Database className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-[#5a5a40]">Lưu trữ IndexedDB</h4>
+                  <p className="text-xs text-[#5a5a40]/60">Quản lý bộ nhớ đệm và dữ liệu</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {dbStatus === 'checking' && <span className="text-sm font-medium text-[#5a5a40]/60">Đang kiểm tra...</span>}
+                {dbStatus === 'active' && (
+                  <>
+                    <span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)] relative flex items-center justify-center">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    </span>
+                    <span className="text-sm font-bold text-green-600">Đang hoạt động</span>
+                  </>
+                )}
+                {dbStatus === 'inactive' && (
+                  <>
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]"></span>
+                    <span className="text-sm font-bold text-red-600">Không khả dụng</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Gemini API Status */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-[#fcfaf7] border border-[#5a5a40]/10 rounded-[16px] gap-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-[#5a5a40]/10 p-2 rounded-full text-[#5a5a40]">
+                  <MessageSquare className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-[#5a5a40]">Google Gemini API</h4>
+                  <p className="text-xs text-[#5a5a40]/60">AI Giáo viên & Phân tích chuyên sâu</p>
+                </div>
+              </div>
+              <div className="flex flex-col items-end">
+                <div className="flex items-center gap-2">
+                   {progress.geminiApiKey ? (
+                     <>
+                      <span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)] relative flex items-center justify-center"></span>
+                      <span className="text-sm font-bold text-green-600">Sẵn sàng</span>
+                     </>
+                   ) : (
+                     <>
+                      <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.4)]"></span>
+                      <span className="text-sm font-bold text-orange-600">Chưa cấu hình API Key</span>
+                     </>
+                   )}
+                </div>
+                <div className="text-[10px] uppercase font-bold text-[#5a5a40]/50 tracking-wider mt-1">
+                  Chức năng: Nội suy văn bản
+                </div>
+              </div>
+            </div>
+
+            {/* Pollinations API Status */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-[#fcfaf7] border border-[#5a5a40]/10 rounded-[16px] gap-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-100 p-2 rounded-full text-blue-600">
+                  <ImageIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-[#5a5a40]">Pollinations.ai</h4>
+                  <p className="text-xs text-[#5a5a40]/60">Trợ lý Aria & Sáng tạo nội dung</p>
+                </div>
+              </div>
+              <div className="flex flex-col items-end">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)] relative flex items-center justify-center">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 min-h-[10px] min-w-[10px] opacity-75"></span>
+                  </span>
+                  <span className="text-sm font-bold text-green-600">Trực tuyến</span>
+                </div>
+                <div className="text-[10px] uppercase font-bold text-[#5a5a40]/50 tracking-wider mt-1 text-right">
+                  Chức năng: Nội suy văn bản / Render Ảnh
+                </div>
+              </div>
+            </div>
+            
           </div>
         </CardContent>
       </Card>

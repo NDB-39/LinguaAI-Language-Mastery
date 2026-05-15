@@ -1,9 +1,7 @@
 {
   "name": "LinguaAI: Language Mastery",
   "description": "LingoAI helps you master languages with personalized paths and AI-driven pronunciation feedback.",
-  "requestFramePermissions": [
-    "microphone"
-  ],
+  "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]

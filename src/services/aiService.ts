@@ -8,8 +8,25 @@ export type Message = { role: 'system' | 'user' | 'assistant', content: string }
 export type GeminiMessage = { role: 'user' | 'model', parts: { text: string }[] };
 
 // Dành cho Aria (Trợ lý) -> sử dụng Pollinations proxy
+async function generateCacheKey(prefix: string, content: string) {
+  try {
+    const msgBuffer = new TextEncoder().encode(content);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return prefix + '_' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (e) {
+    let hash = 0;
+    for (let i = 0; i < content.length; i++) {
+      const char = content.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return prefix + '_' + hash.toString(36);
+  }
+}
+
 export async function chatWithAria(messages: Message[]): Promise<string> {
-  const cacheKey = 'aria_' + btoa(encodeURIComponent(JSON.stringify(messages))).substring(0, 50);
+  const cacheKey = await generateCacheKey('aria', JSON.stringify(messages));
   const cached = await getCache<string>(cacheKey);
   if (cached) return cached;
 
@@ -61,7 +78,7 @@ export async function askAI(system: string, user: string): Promise<string> {
 
 // Dành cho Giáo viên AI -> sử dụng Gemini (backend endpoint)
 export async function askTeacher(systemInstruction: string, messages: Message[], apiKey?: string): Promise<string> {
-  const cacheKey = 'teacher_' + btoa(encodeURIComponent(systemInstruction + JSON.stringify(messages))).substring(0, 50);
+  const cacheKey = await generateCacheKey('teacher', systemInstruction + JSON.stringify(messages));
   const cached = await getCache<string>(cacheKey);
   if (cached) return cached;
   

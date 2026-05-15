@@ -8,25 +8,36 @@ import { cn } from '@/src/lib/utils';
 import { useStore } from '@/src/store/useStore';
 
 export function Assistant() {
-  const { progress } = useStore();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'system',
-      content: `Bạn là Aria, một trợ lý ảo AI chuyên gia giáo dục ngôn ngữ. 
-      Bạn giúp học viên thiết kế lộ trình "đo ni đóng giày" dựa trên trình độ và mục tiêu của họ. 
-      Học viên hiện đang học ngôn ngữ có mã '${progress.targetLanguage}'. Cấp độ hiện tại: ${progress.level}. 
-      Hãy giao tiếp thân thiện, khuyến khích, dùng tiếng Việt. Hãy hỏi thông tin cần thiết nếu cần thiết lập lộ trình.
-      
-      QUAN TRỌNG: Bạn có khả năng tạo hình ảnh minh họa từ vựng, tình huống giao tiếp, và visual mnemonic (kỹ thuật ghi nhớ bằng hình ảnh).
-      Để tạo ảnh minh họa, bạn HÃY trả về đánh dấu Markdown theo định dạng:
-      ![Mô tả ảnh chi tiết bằng TIẾNG ANH, KHÔNG CÓ KHOẢNG TRẮNG HOẶC DÙNG %20](https://image.pollinations.ai/prompt/CHI_TIET_MO_TA_ANH_BANG_TIENG_ANH_THAY_KHOANG_TRANG_BANG_%20?width=800&height=400&nologo=true)
-      
-      Ví dụ: Nếu sinh viên muốn ảnh về quả táo, bạn trả về:
-      ![An apple on a table](https://image.pollinations.ai/prompt/An%20apple%20on%20a%20table?width=800&height=400&nologo=true)
-      Hãy chủ động tạo thẻ hình ảnh này khi giải thích từ vựng hoặc tạo tình huống ngữ cảnh nhé.`
-    },
-    { role: 'assistant', content: 'Chào bạn! Mình là Aria, trợ lý ngôn ngữ AI của bạn. Bạn muốn mình thiết kế lộ trình học tập, giải đáp ngữ pháp hay luyện tập giao tiếp hôm nay?' }
-  ]);
+  const { progress, setAssistantHistory } = useStore();
+  
+  const systemInstruction: Message = {
+    role: 'system',
+    content: `Bạn là Aria, một trợ lý ảo AI chuyên gia giáo dục ngôn ngữ. 
+    Bạn giúp học viên thiết kế lộ trình "đo ni đóng giày" dựa trên trình độ và mục tiêu của họ. 
+    Học viên hiện đang học ngôn ngữ có mã '${progress.targetLanguage}'. Cấp độ hiện tại: ${progress.level}. 
+    Hãy giao tiếp thân thiện, khuyến khích, dùng tiếng Việt. Hãy hỏi thông tin cần thiết nếu cần thiết lập lộ trình.
+    
+    QUAN TRỌNG: Bạn có khả năng tạo hình ảnh minh họa từ vựng, tình huống giao tiếp, và visual mnemonic (kỹ thuật ghi nhớ bằng hình ảnh).
+    Để tạo ảnh minh họa, bạn HÃY trả về đánh dấu Markdown theo định dạng:
+    ![Mô tả ảnh chi tiết bằng TIẾNG ANH, KHÔNG CÓ KHOẢNG TRẮNG HOẶC DÙNG %20](https://image.pollinations.ai/prompt/CHI_TIET_MO_TA_ANH_BANG_TIENG_ANH_THAY_KHOANG_TRANG_BANG_%20?width=800&height=400&nologo=true)
+    
+    Ví dụ: Nếu sinh viên muốn ảnh về quả táo, bạn trả về:
+    ![An apple on a table](https://image.pollinations.ai/prompt/An%20apple%20on%20a%20table?width=800&height=400&nologo=true)
+    Hãy chủ động tạo thẻ hình ảnh này khi giải thích từ vựng hoặc tạo tình huống ngữ cảnh nhé.`
+  };
+
+  const initialMessages: Message[] = (progress.assistantHistory?.length || 0) > 0 
+    ? [systemInstruction, ...(progress.assistantHistory || []).filter(m => m.role !== 'system')]
+    : [
+        systemInstruction,
+        { role: 'assistant', content: 'Chào bạn! Mình là Aria, trợ lý ngôn ngữ AI của bạn. Bạn muốn mình thiết kế lộ trình học tập, giải đáp ngữ pháp hay luyện tập giao tiếp hôm nay?' }
+      ];
+
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  
+  useEffect(() => {
+    setAssistantHistory(messages);
+  }, [messages, setAssistantHistory]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [playingIdx, setPlayingIdx] = useState<number | null>(null);

@@ -14,6 +14,8 @@ const idbStorage: StateStorage = {
   },
 };
 
+export type Message = { role: 'system' | 'user' | 'assistant', content: string };
+
 export interface UserProgress {
   xp: number;
   level: number;
@@ -22,6 +24,8 @@ export interface UserProgress {
   nativeLanguage: string;
   geminiApiKey: string;
   savedRoadmap: string | null;
+  assistantHistory: Message[];
+  teacherHistory: Message[];
 }
 
 interface StoreState {
@@ -31,6 +35,9 @@ interface StoreState {
   setGeminiApiKey: (key: string) => void;
   setSavedRoadmap: (roadmap: string | null) => void;
   incrementStreak: () => void;
+  setAssistantHistory: (messages: Message[]) => void;
+  setTeacherHistory: (messages: Message[]) => void;
+  clearHistories: () => void;
 }
 
 export const useStore = create<StoreState>()(
@@ -44,6 +51,8 @@ export const useStore = create<StoreState>()(
         nativeLanguage: 'vi',
         geminiApiKey: '',
         savedRoadmap: null,
+        assistantHistory: [],
+        teacherHistory: [],
       },
       addXp: (amount) => set((state) => {
         const newXp = state.progress.xp + amount;
@@ -61,6 +70,15 @@ export const useStore = create<StoreState>()(
       })),
       incrementStreak: () => set((state) => ({
         progress: { ...state.progress, streak: state.progress.streak + 1 }
+      })),
+      setAssistantHistory: (messages) => set((state) => ({
+        progress: { ...state.progress, assistantHistory: messages }
+      })),
+      setTeacherHistory: (messages) => set((state) => ({
+        progress: { ...state.progress, teacherHistory: messages }
+      })),
+      clearHistories: () => set((state) => ({
+        progress: { ...state.progress, assistantHistory: [], teacherHistory: [] }
       }))
     }),
     {

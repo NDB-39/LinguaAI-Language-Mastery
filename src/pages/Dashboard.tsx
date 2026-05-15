@@ -48,18 +48,17 @@ export function Dashboard() {
           <h2 className="font-serif text-2xl font-bold text-[#5a5a40]">Làm tiếp nè</h2>
         </div>
         <div className="space-y-4">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer group" onClick={() => navigate('/practice')}>
-            <CardContent className="p-6 flex items-center justify-between">
-              <div className="flex items-center gap-5">
-                <div className="bg-[#f5f5f0] p-4 rounded-full text-[#5a5a40] group-hover:bg-[#5a5a40] group-hover:text-white transition-colors duration-300">
-                  <PlayCircle className="w-8 h-8" />
+          <Card className="border border-dashed border-[#5a5a40]/20 bg-[#f5f5f0]/50">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="bg-white p-3 rounded-full text-[#5a5a40] shadow-sm">
+                  <PlayCircle className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-serif text-xl font-bold leading-none mb-2 text-[#5a5a40]">Luyện phát âm AI</h3>
-                  <p className="text-[#5a5a40]/60 text-sm">Chữa lỗi phát âm câu giao tiếp cơ bản</p>
+                  <h3 className="font-serif text-lg font-bold mb-1 text-[#5a5a40]">Bạn muốn luyện phát âm?</h3>
+                  <p className="text-[#5a5a40]/70 text-sm">Tính năng nhận diện giọng nói hiện tại hoạt động mượt mà nhất trên các ứng dụng gốc. Hãy sử dụng tính năng Voice của <strong>ChatGPT App</strong> hoặc <strong>Gemini App</strong> trên điện thoại để có trải nghiệm luyện phát âm tuyệt vời nhất nhé!</p>
                 </div>
               </div>
-              <Button className="hidden md:inline-flex">Bắt đầu ngay</Button>
             </CardContent>
           </Card>
 
