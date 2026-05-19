@@ -23,6 +23,87 @@ interface QuizQuestion {
   explanation: string;
 }
 
+let imageQueue = Promise.resolve();
+
+const QueuedImage = ({ src, alt, ...props }: any) => {
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    
+    const loadImg = async () => {
+      imageQueue = imageQueue.then(async () => {
+        if (!isMounted) return;
+        
+        try {
+          await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(true);
+            img.onerror = () => reject();
+            img.src = src;
+          });
+          
+          if (isMounted) {
+            setLoadedSrc(src);
+            setIsLoading(false);
+          }
+        } catch (err) {
+           if (isMounted) {
+             setLoadedSrc(src);
+             setIsLoading(false);
+           }
+        }
+        
+        // Small delay between requests to avoid rate limits
+        await new Promise(r => setTimeout(r, 800));
+      });
+    };
+    
+    if (src) {
+      loadImg();
+    }
+    
+    return () => { isMounted = false; };
+  }, [src]);
+
+  const matchWidth = src?.match(/width=(\d+)/);
+  const matchHeight = src?.match(/height=(\d+)/);
+  const width = matchWidth ? parseInt(matchWidth[1]) : null;
+  const height = matchHeight ? parseInt(matchHeight[1]) : null;
+
+  let isSquare = width === height && width !== null;
+  
+  let containerClass = "not-prose relative overflow-hidden rounded-2xl border border-[#5a5a40]/10 shadow-sm group my-8 bg-[#f5f5f0] flex items-center justify-center";
+
+  if (isSquare) {
+    containerClass = cn(containerClass, "aspect-square w-full sm:w-1/2 md:w-1/3 mx-auto");
+  } else {
+    containerClass = cn(containerClass, "aspect-video w-full");
+  }
+
+  return (
+    <span className={cn(containerClass, "block max-w-full")}>
+       {isLoading && (
+         <span className="absolute inset-0 flex flex-col items-center justify-center text-[#5a5a40]/60 z-10 bg-gradient-to-b from-white/40 to-[#f5f5f0]/40">
+           <Loader2 className="w-8 h-8 animate-spin mb-3 text-[#d4a373]" />
+           <span className="text-[10px] font-bold tracking-widest uppercase animate-pulse px-4 text-center max-w-[80%] truncate">
+             {alt ? `AI ĐANG VẼ "${alt}"...` : 'AI ĐANG XUẤT ẢNH...'}
+           </span>
+         </span>
+       )}
+       {loadedSrc && (
+         <img 
+           src={loadedSrc} 
+           alt={alt} 
+           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 animate-in fade-in duration-500"
+           {...props} 
+         />
+       )}
+    </span>
+  );
+};
+
 export function Lessons() {
   const { progress, addXp } = useStore();
   const navigate = useNavigate();
@@ -55,12 +136,17 @@ export function Lessons() {
     setIsQuizMode(false);
 
     const targetLang = progress.targetLanguage;
-    const system = `Bạn là chuyên gia giáo viên ngoại ngữ. Nhiệm vụ của bạn là soạn một bài học tóm tắt cực kì sinh động và dễ hiểu cho cấp độ ${level} ngôn ngữ mã '${targetLang}'.`;
+    const system = `Bạn là chuyên gia giáo viên ngoại ngữ. Nhiệm vụ của bạn là soạn một bài học tóm tắt cực kì sinh động và dễ hiểu cho cấp độ ${level} ngôn ngữ mã '${targetLang}'.
+Bạn BẮT BUỘC CÓ MỘT ẢNH BÌA GIAO DIỆN (Hero Image) ở đầu bài học, và 2-3 CẬU TRÚC TỪ VỰNG HOẶC HỘI THOẠI CÓ ẢNH MINH HỌA.
+Để chèn ảnh, bạn hãy sử dụng dịch vụ pollinations.ai. Cú pháp Markdown:
+![Mô tả ảnh](https://image.pollinations.ai/prompt/Mã%20hoá%20URL%20các%20từ%20khóa%20tiếng%20Anh%20mô%20tả%20ảnh?width=800&height=400&nologo=true)
+Ví dụ ảnh minh hoạ một lớp học: ![Classroom](https://image.pollinations.ai/prompt/students%20in%20a%20modern%20classroom%20illustration%20flat%20design?width=1200&height=675&nologo=true)
+Ví dụ minh hoạ từ vựng quả táo: ![Apple](https://image.pollinations.ai/prompt/a%20red%20apple%20minimalist%20flat%20design?width=400&height=400&nologo=true)`;
     const prompt = `Hãy soạn bài học đầu tiên (Bài 1) về: 
 1. 5 từ vựng/cụm từ thông dụng nhất ở cấp độ này kèm ví dụ. 
 2. 1 điểm ngữ pháp trọng tâm và cách dùng. 
 3. 2 đoạn hội thoại ngắn để ứng dụng.
-Hãy format bằng Markdown đẹp đẽ, có emoji minh hoạ, bảng biểu nếu cần. Trả lời hoàn toàn bằng tiếng Việt. Bắt đầu bằng tiêu đề "## Bài 1: [Tên chủ đề]"`;
+Hãy format bằng Markdown đẹp đẽ, có emoji minh hoạ, bảng biểu nếu cần. Trả lời hoàn toàn bằng tiếng Việt. Bắt đầu bằng tiêu đề "## Bài 1: [Tên chủ đề]" kèm ảnh bìa bài học (tỷ lệ 16:9).`;
     
     try {
       const content = await askAI(system, prompt);
@@ -83,7 +169,10 @@ Hãy format bằng Markdown đẹp đẽ, có emoji minh hoạ, bảng biểu n�
     const currentLessonSummary = lessonHistory[currentLessonIndex].substring(0, 1500); // Context
     const nextLessonNum = currentLessonIndex + 2;
     
-    const system = `Bạn là chuyên gia giáo viên ngoại ngữ. Học sinh đang học cấp độ ${selectedLevel} ngôn ngữ mã '${targetLang}'.`;
+    const system = `Bạn là chuyên gia giáo viên ngoại ngữ. Học sinh đang học cấp độ ${selectedLevel} ngôn ngữ mã '${targetLang}'.
+Bạn BẮT BUỘC CÓ MỘT ẢNH BÌA (Hero Image) ở đầu bài học, và vài ẢNH CỤ THỂ MINH HỌA TỪ VỰNG HOẶC TÌNH HUỐNG HỘI THOẠI.
+Để chèn ảnh, bạn hãy sử dụng dịch vụ pollinations.ai. Cú pháp Markdown:
+![Mô tả ảnh](https://image.pollinations.ai/prompt/Mã%20hoá%20URL%20các%20từ%20khóa%20tiếng%20Anh%20mô%20tả%20ảnh?width=800&height=400&nologo=true)`;
     const prompt = `Đây là tóm tắt một phần nội dung bài học trước (Bài ${nextLessonNum - 1}):
 ---
 ${currentLessonSummary}
@@ -95,7 +184,7 @@ Yêu cầu bài mới:
 1. 5 từ vựng/cụm từ mới kèm ví dụ.
 2. 1 điểm ngữ pháp mới liên quan hoặc nâng cao hơn từ bài trước.
 3. 2 đoạn hội thoại ứng dụng mới.
-Hãy format bằng Markdown đẹp, có emoji minh hoạ, bảng biểu nếu cần. Trả lời hoàn toàn bằng tiếng Việt. Bắt đầu bằng tiêu đề "## Bài ${nextLessonNum}: [Tên chủ đề]"`;
+Hãy format bằng Markdown đẹp, có emoji minh hoạ, bảng biểu nếu cần. Có dùng ảnh minh họa từ vựng/tình huống. Trả lời hoàn toàn bằng tiếng Việt. Bắt đầu bằng tiêu đề "## Bài ${nextLessonNum}: [Tên chủ đề]"`;
 
     try {
       const content = await askAI(system, prompt);
@@ -397,16 +486,43 @@ TRẢ VỀ DUY NHẤT một mảng JSON (BẮT BUỘC ĐÚNG CÚ PHÁP ĐỂ CH�
               
               <div className="prose prose-stone prose-p:leading-relaxed prose-pre:bg-[#f5f5f0] prose-pre:text-[#2d2d2a] prose-h2:text-[#5a5a40] prose-h2:font-serif prose-h3:text-[#5a5a40] prose-h3:font-serif prose-h3:mt-8 prose-strong:text-[#5a5a40] max-w-none prose-table:min-w-full prose-th:bg-[#f5f5f0] prose-th:p-2 prose-td:p-2 prose-td:border-t prose-td:border-[#5a5a40]/10">
                 {isLoading ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-[#5a5a40]/50">
-                    <Loader2 className="w-8 h-8 animate-spin mb-4" />
-                    <p className="text-sm font-medium animate-pulse">
-                      {lessonHistory.length === 0 ? "Aria đang soạn giáo án riêng cho bạn..." : "Aria đang thiết kế bài học tiếp theo..."}
+                  <div className="flex flex-col items-center justify-center py-20 px-4 text-[#5a5a40] w-full bg-gradient-to-b from-white/80 to-[#f5f5f0]/80 rounded-3xl border border-[#5a5a40]/10 shadow-inner">
+                    <div className="relative mb-8">
+                      <div className="absolute inset-0 bg-[#d4a373] opacity-30 rounded-full animate-pulse blur-2xl"></div>
+                      <div className="relative bg-white w-16 h-16 rounded-2xl shadow-sm border border-[#5a5a40]/10 flex items-center justify-center animate-bounce">
+                        <Sparkles className="w-8 h-8 text-[#d4a373]" />
+                      </div>
+                    </div>
+                    <h3 className="text-xl md:text-2xl font-serif font-bold text-[#5a5a40] mb-3 text-center">
+                      {lessonHistory.length === 0 ? "Aria đang soạn giáo án..." : "Aria đang thiết kế bài học mới..."}
+                    </h3>
+                    <p className="text-sm text-[#5a5a40]/60 mb-8 max-w-sm text-center">
+                      Quá trình này sử dụng AI để tạo nội dung cá nhân hóa, bạn đợi một lát nhé.
                     </p>
+                    <div className="flex flex-col gap-3 w-full max-w-xs opacity-80">
+                      <div className="h-3 w-full bg-[#5a5a40]/10 rounded-full overflow-hidden relative">
+                        <div className="absolute inset-y-0 left-0 bg-[#d4a373]/50 w-1/2 animate-[pulse_1.5s_ease-in-out_infinite]"></div>
+                      </div>
+                      <div className="h-3 w-4/5 mx-auto bg-[#5a5a40]/10 rounded-full overflow-hidden relative">
+                        <div className="absolute inset-y-0 left-0 bg-[#d4a373]/40 w-full animate-[pulse_1.5s_ease-in-out_0.2s_infinite]"></div>
+                      </div>
+                      <div className="h-3 w-3/5 mx-auto bg-[#5a5a40]/10 rounded-full overflow-hidden relative">
+                         <div className="absolute inset-y-0 left-0 bg-[#d4a373]/30 w-full animate-[pulse_1.5s_ease-in-out_0.4s_infinite]"></div>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-8 animate-in fade-in duration-700">
                     <div className="markdown-body">
-                      <ReactMarkdown>{lessonContent}</ReactMarkdown>
+                      <ReactMarkdown 
+                        components={{
+                          img: ({node, ...props}) => (
+                            <QueuedImage {...props} />
+                          )
+                        }}
+                      >
+                        {lessonContent}
+                      </ReactMarkdown>
                     </div>
 
                     <div className="bg-[#f5f5f0] p-6 rounded-2xl border border-[#5a5a40]/10 mt-8">
