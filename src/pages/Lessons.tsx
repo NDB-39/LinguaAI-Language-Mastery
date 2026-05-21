@@ -136,17 +136,21 @@ export function Lessons() {
     setIsQuizMode(false);
 
     const targetLang = progress.targetLanguage;
-    const system = `Bạn là chuyên gia giáo viên ngoại ngữ. Nhiệm vụ của bạn là soạn một bài học tóm tắt cực kì sinh động và dễ hiểu cho cấp độ ${level} ngôn ngữ mã '${targetLang}'.
+    const roadmapContext = progress.savedRoadmap 
+      ? `\n\nHọc sinh đã có một lộ trình học tập mục tiêu như sau, bạn hãy thiết kế bài học DỰA TRÊN LỘ TRÌNH ĐÓ và đừng đi lệch trọng tâm:\n${progress.savedRoadmap.substring(0, 1000)}...` 
+      : "";
+
+    const system = `Bạn là chuyên gia giáo viên ngoại ngữ. Nhiệm vụ của bạn là soạn một bài học tóm tắt cực kì sinh động và dễ hiểu cho cấp độ ${level} ngôn ngữ mã '${targetLang}'.${roadmapContext}
 Bạn BẮT BUỘC CÓ MỘT ẢNH BÌA GIAO DIỆN (Hero Image) ở đầu bài học, và 2-3 CẬU TRÚC TỪ VỰNG HOẶC HỘI THOẠI CÓ ẢNH MINH HỌA.
 Để chèn ảnh, bạn hãy sử dụng dịch vụ pollinations.ai. Cú pháp Markdown:
-![Mô tả ảnh](https://image.pollinations.ai/prompt/Mã%20hoá%20URL%20các%20từ%20khóa%20tiếng%20Anh%20mô%20tả%20ảnh?width=800&height=400&nologo=true)
-Ví dụ ảnh minh hoạ một lớp học: ![Classroom](https://image.pollinations.ai/prompt/students%20in%20a%20modern%20classroom%20illustration%20flat%20design?width=1200&height=675&nologo=true)
-Ví dụ minh hoạ từ vựng quả táo: ![Apple](https://image.pollinations.ai/prompt/a%20red%20apple%20minimalist%20flat%20design?width=400&height=400&nologo=true)`;
+![Mô tả ảnh](https://image.pollinations.ai/prompt/Mã%20hoá%20URL%20các%20từ%20khóa%20tiếng%20Anh%20mô%20tả%20ảnh?width=800&height=400&nologo=true&model=${progress.imageModelId || 'flux'})
+Ví dụ ảnh minh hoạ một lớp học: ![Classroom](https://image.pollinations.ai/prompt/students%20in%20a%20modern%20classroom%20illustration%20flat%20design?width=1200&height=675&nologo=true&model=${progress.imageModelId || 'flux'})
+Ví dụ minh hoạ từ vựng quả táo: ![Apple](https://image.pollinations.ai/prompt/a%20red%20apple%20minimalist%20flat%20design?width=400&height=400&nologo=true&model=${progress.imageModelId || 'flux'})`;
     const prompt = `Hãy soạn bài học đầu tiên (Bài 1) về: 
-1. 5 từ vựng/cụm từ thông dụng nhất ở cấp độ này kèm ví dụ. 
+1. 5 từ vựng/cụm từ thông dụng nhất ở cấp độ này kèm ví dụ (BẮT BUỘC có ảnh minh họa từ pollinations.ai cho mỗi từ vựng, kích thước width=400&height=400).
 2. 1 điểm ngữ pháp trọng tâm và cách dùng. 
-3. 2 đoạn hội thoại ngắn để ứng dụng.
-Hãy format bằng Markdown đẹp đẽ, có emoji minh hoạ, bảng biểu nếu cần. Trả lời hoàn toàn bằng tiếng Việt. Bắt đầu bằng tiêu đề "## Bài 1: [Tên chủ đề]" kèm ảnh bìa bài học (tỷ lệ 16:9).`;
+3. 2 đoạn hội thoại ngắn để ứng dụng (kèm 1 ảnh minh hoạ ngữ cảnh).
+Hãy format bằng Markdown đẹp đẽ, có emoji minh hoạ, bảng biểu nếu cần. Trả lời hoàn toàn bằng tiếng Việt. Bắt đầu bằng tiêu đề "## Bài 1: [Tên chủ đề]" kèm ảnh bìa bài học (tỷ lệ 16:9 width=800&height=450).`;
     
     try {
       const content = await askAI(system, prompt);
@@ -172,7 +176,7 @@ Hãy format bằng Markdown đẹp đẽ, có emoji minh hoạ, bảng biểu n�
     const system = `Bạn là chuyên gia giáo viên ngoại ngữ. Học sinh đang học cấp độ ${selectedLevel} ngôn ngữ mã '${targetLang}'.
 Bạn BẮT BUỘC CÓ MỘT ẢNH BÌA (Hero Image) ở đầu bài học, và vài ẢNH CỤ THỂ MINH HỌA TỪ VỰNG HOẶC TÌNH HUỐNG HỘI THOẠI.
 Để chèn ảnh, bạn hãy sử dụng dịch vụ pollinations.ai. Cú pháp Markdown:
-![Mô tả ảnh](https://image.pollinations.ai/prompt/Mã%20hoá%20URL%20các%20từ%20khóa%20tiếng%20Anh%20mô%20tả%20ảnh?width=800&height=400&nologo=true)`;
+![Mô tả ảnh](https://image.pollinations.ai/prompt/Mã%20hoá%20URL%20các%20từ%20khóa%20tiếng%20Anh%20mô%20tả%20ảnh?width=800&height=400&nologo=true&model=${progress.imageModelId || 'flux'})`;
     const prompt = `Đây là tóm tắt một phần nội dung bài học trước (Bài ${nextLessonNum - 1}):
 ---
 ${currentLessonSummary}
@@ -181,10 +185,10 @@ ${currentLessonSummary}
 Nhiệm vụ của bạn: Hãy thiết kế BÀI HỌC TIẾP THEO (Bài ${nextLessonNum}) cho học sinh này. 
 Nội dung bài mới phải nối tiếp logic, KHÔNG được trùng lặp với bài trước, và nâng cao hơn một chút.
 Yêu cầu bài mới:
-1. 5 từ vựng/cụm từ mới kèm ví dụ.
+1. 5 từ vựng/cụm từ mới kèm ví dụ (BẮT BUỘC có ảnh minh họa từ pollinations.ai cho mỗi từ vựng, kích thước width=400&height=400).
 2. 1 điểm ngữ pháp mới liên quan hoặc nâng cao hơn từ bài trước.
-3. 2 đoạn hội thoại ứng dụng mới.
-Hãy format bằng Markdown đẹp, có emoji minh hoạ, bảng biểu nếu cần. Có dùng ảnh minh họa từ vựng/tình huống. Trả lời hoàn toàn bằng tiếng Việt. Bắt đầu bằng tiêu đề "## Bài ${nextLessonNum}: [Tên chủ đề]"`;
+3. 2 đoạn hội thoại ứng dụng mới (kèm 1 ảnh minh hoạ ngữ cảnh).
+Hãy format bằng Markdown đẹp, có emoji minh hoạ, bảng biểu nếu cần. Có dùng ảnh minh họa từ vựng/tình huống. Trả lời hoàn toàn bằng tiếng Việt. Bắt đầu bằng tiêu đề "## Bài ${nextLessonNum}: [Tên chủ đề]" kèm ảnh bìa (tỷ lệ 16:9 width=800&height=450).`;
 
     try {
       const content = await askAI(system, prompt);

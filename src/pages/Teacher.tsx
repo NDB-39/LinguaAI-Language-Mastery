@@ -16,8 +16,13 @@ export function Teacher() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // System instruction for Teacher
+  const roadmapContext = progress.savedRoadmap 
+    ? `\nHọc sinh này đang theo lộ trình học tập như sau:\n${progress.savedRoadmap.substring(0, 1000)}...\nHãy dựa vào lộ trình này để hướng dẫn, đưa ra lời khuyên sát thực tế hoặc kiểm tra nếu họ yêu cầu.`
+    : "";
+
   const systemInstruction = `Bạn là Teacher AI, một giáo viên ngôn ngữ chuyên nghiệp chuyên sâu.
 Ngôn ngữ giảng dạy dự kiến: ${progress.targetLanguage}
+Cấp độ hiện tại của học sinh trên hệ thống: Cấp độ ${progress.level}${roadmapContext}
 Bạn có khả năng:
 - Giải thích ngữ pháp cặn kẽ
 - Tạo bài tập trắc nghiệm / tự luận

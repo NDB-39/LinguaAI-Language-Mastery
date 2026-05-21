@@ -7,7 +7,7 @@ import { get, set } from 'idb-keyval';
 import { cn } from '@/src/lib/utils';
 
 export function Profile() {
-  const { progress, setTargetLanguage, setGeminiApiKey } = useStore();
+  const { progress, setTargetLanguage, setGeminiApiKey, setImageModelId } = useStore();
   const [dbStatus, setDbStatus] = useState<'checking' | 'active' | 'inactive'>('checking');
   const [apiActivity, setApiActivity] = useState<{
     gemini: 'idle' | 'generating_text' | 'generating_image',
@@ -107,6 +107,23 @@ export function Profile() {
               onChange={(e) => setGeminiApiKey(e.target.value)}
             />
             <p className="text-xs text-[#5a5a40]/60">API Key sẽ chỉ được lưu cục bộ trên trình duyệt của bạn.</p>
+          </div>
+
+          <div className="space-y-3 pt-4 border-t border-[#5a5a40]/10">
+            <label className="text-xs uppercase tracking-widest font-bold text-[#5a5a40]/60">Pollinations Image Model (Tùy chọn render ảnh)</label>
+            <select 
+              className="w-full p-4 border border-[#5a5a40]/20 rounded-2xl focus:ring-2 focus:ring-[#5a5a40] focus:border-transparent bg-[#f5f5f0] text-[#2d2d2a] font-medium outline-none transition-all flex items-center justify-between"
+              value={progress.imageModelId || 'flux'}
+              onChange={(e) => setImageModelId(e.target.value)}
+            >
+              <option value="flux">Flux (Mặc định, cân bằng)</option>
+              <option value="flux-realism">Flux Realism (Chân thực)</option>
+              <option value="flux-anime">Flux Anime (Hoạt hình Anime)</option>
+              <option value="flux-3d">Flux 3D (Đồ họa 3D)</option>
+              <option value="any-dark">Any Dark (Tối / Hơi hướng nghệ thuật)</option>
+              <option value="turbo">Turbo (Tạo siêu tốc)</option>
+            </select>
+            <p className="text-xs text-[#5a5a40]/60">Chọn model phù hợp nếu model hiện tại vẽ sai chữ (Lưu ý: model Flux-based thường tốt nhất cho chữ).</p>
           </div>
         </CardContent>
       </Card>

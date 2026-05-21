@@ -1,15 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { chatWithAria, Message } from '@/src/services/aiService';
-import { Loader2, Route, BookOpen, Clock, Target, Save, Send, CheckCircle2 } from 'lucide-react';
+import { Loader2, Route, BookOpen, Clock, Target, Save, Send, CheckCircle2, MessageSquare, Book } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useStore } from '@/src/store/useStore';
 import { cn } from '@/src/lib/utils';
 
 export function Path() {
   const { progress, setSavedRoadmap } = useStore();
-  const [level, setLevel] = useState('Beginner');
+  const navigate = useNavigate();
+  
+  // Auto-infer initial level based on XP/level in store
+  const getInitialLevelStr = (lvl: number) => {
+    if (lvl < 5) return 'Mất gốc (Beginner)';
+    if (lvl < 15) return 'Cơ bản (Elementary)';
+    if (lvl < 30) return 'Trung cấp (Intermediate)';
+    return 'Nâng cao (Advanced)';
+  };
+
+  const [level, setLevel] = useState(getInitialLevelStr(progress.level));
   const [goal, setGoal] = useState('Giao tiếp du lịch');
   const [hours, setHours] = useState('1');
   
@@ -20,6 +31,11 @@ export function Path() {
   const [chatInput, setChatInput] = useState('');
   const [saved, setSaved] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Sync when global level changes
+  useEffect(() => {
+    setLevel(getInitialLevelStr(progress.level));
+  }, [progress.level]);
 
   // Auto-scroll on new message
   useEffect(() => {
@@ -34,14 +50,16 @@ export function Path() {
     setSaved(false);
     try {
       const prompt = `Hãy tạo một lộ trình học tập cá nhân hóa.
-      - Trình độ hiện tại: ${level}
+      - Ngôn ngữ mục tiêu: ${progress.targetLanguage} (Cấp độ hiện tại trên app: Level ${progress.level})
+      - Đánh giá khả năng: ${level}
       - Mục tiêu: ${goal}
       - Thời gian dành ra mỗi ngày: ${hours} giờ.
-      Hãy viết dưới định dạng Markdown, chia làm các tuần (Tuần 1, Tuần 2,...). Giao diện tối ưu để đọc lướt. Viết bằng tiếng Việt.
-      Sau khi đưa ra lộ trình, hãy đặt 1-2 câu hỏi ngắn để xem học sinh có muốn điều chỉnh thêm không.`;
+      Hãy viết dưới định dạng Markdown, chia làm các tuần (Tuần 1, Tuần 2,...). Tổ chức giao diện tối ưu để đọc lướt. 
+      Vui lòng đưa ra các gợi ý cụ thể để học viên kết hợp dùng chức năng "Bài học" (để học nền tảng) và "Trợ lý/Giáo viên" (để thực hành giao tiếp) trong ứng dụng này.
+      Viết bằng tiếng Việt. Sau khi đưa ra lộ trình, hãy đặt 1-2 câu hỏi ngắn để xem học sinh có muốn điều chỉnh thêm không.`;
       
       const newMessages: Message[] = [
-        { role: 'system', content: "Bạn là chuyên gia giáo dục ngôn ngữ AI. Hãy thiết kế lộ trình học tập và thân thiện hỏi người dùng xem họ có muốn điều chỉnh gì không." },
+        { role: 'system', content: "Bạn là chuyên gia giáo dục ngôn ngữ AI. Hãy thiết kế lộ trình học tập, liên kết chặt chẽ với các tính năng của app (Bài học, Giáo viên AI) và thân thiện hỏi người dùng xem họ có muốn điều chỉnh gì không." },
         { role: 'user', content: prompt }
       ];
       
@@ -63,7 +81,7 @@ export function Path() {
     setMessages(newMessages);
     setChatInput('');
     setLoadingChat(true);
-    setSaved(false); // require saving again if changed
+    setSaved(false);
 
     try {
       const response = await chatWithAria(newMessages);
@@ -76,26 +94,31 @@ export function Path() {
   };
 
   const saveRoadmap = () => {
-    // Luu toan bo tin nhan de co the doc context
     setSavedRoadmap(JSON.stringify(messages));
     setSaved(true);
   };
 
+  const hasGeneratedRoadmap = messages.length > 0;
+
   return (
     <div className="space-y-8 pb-12">
       <header className="mb-6">
-        <h1 className="font-serif text-3xl font-bold text-[#5a5a40] tracking-tight mb-2">Roadmap Planning</h1>
-        <p className="text-[#5a5a40]/60">AI sẽ thiết kế riêng một lộ trình học phù hợp với khả năng và quỹ thời gian của bạn.</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-serif text-3xl font-bold text-[#5a5a40] tracking-tight mb-2">Lộ trình học tập</h1>
+            <p className="text-[#5a5a40]/60">AI thiết kế lộ trình riêng dựa trên khả năng, mục tiêu và <span className="font-bold text-[#d4a373]">Level {progress.level}</span> hiện tại của bạn.</p>
+          </div>
+        </div>
       </header>
 
-      {messages.length === 0 && !loading && (
+      {!hasGeneratedRoadmap && !loading && (
         <Card className="max-w-xl mx-auto border-[#5a5a40]/10 shadow-sm">
           <CardContent className="p-8 space-y-6">
             {progress.savedRoadmap && (
               <div className="bg-[#faedcd]/50 border border-[#d4a373]/30 p-4 rounded-xl flex items-center justify-between mb-4 fade-in">
                 <div className="flex flex-col">
                    <span className="text-sm font-bold text-[#5a5a40]">Bạn đã lưu một lộ trình</span>
-                   <span className="text-xs text-[#5a5a40]/60">Bạn có thể xem lại hoặc tiếp tục điều chỉnh.</span>
+                   <span className="text-xs text-[#5a5a40]/60">Sử dụng lại lộ trình cũ hoặc tạo mới.</span>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setMessages(JSON.parse(progress.savedRoadmap!))}>Xem lộ trình</Button>
               </div>
@@ -103,7 +126,7 @@ export function Path() {
 
             <div className="space-y-3">
               <label className="text-xs uppercase tracking-widest font-bold text-[#5a5a40]/60 flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-[#5a5a40]" /> THÔNG TIN TRÌNH ĐỘ
+                <BookOpen className="w-4 h-4 text-[#5a5a40]" /> TRÌNH ĐỘ HIỆN TẠI
               </label>
               <select 
                 className="w-full p-4 border border-[#5a5a40]/20 rounded-2xl focus:ring-2 focus:ring-[#5a5a40] focus:border-transparent bg-[#f5f5f0] text-[#2d2d2a] font-medium outline-none transition-all"
@@ -119,7 +142,7 @@ export function Path() {
 
             <div className="space-y-3">
               <label className="text-xs uppercase tracking-widest font-bold text-[#5a5a40]/60 flex items-center gap-2">
-                <Target className="w-4 h-4 text-[#5a5a40]" /> MỤC TIÊU HỌC TẬP
+                <Target className="w-4 h-4 text-[#5a5a40]" /> MỤC TIÊU HỌC TẬP {progress.targetLanguage.toUpperCase()}
               </label>
               <select 
                 className="w-full p-4 border border-[#5a5a40]/20 rounded-2xl focus:ring-2 focus:ring-[#5a5a40] focus:border-transparent bg-[#f5f5f0] text-[#2d2d2a] font-medium outline-none transition-all"
@@ -128,7 +151,7 @@ export function Path() {
               >
                 <option>Giao tiếp du lịch</option>
                 <option>Phỏng vấn xin việc</option>
-                <option>Học thuật (IELTS/TOEIC)</option>
+                <option>Học thuật (IELTS/TOEIC/JLPT...)</option>
                 <option>Đọc tài liệu chuyên ngành</option>
               </select>
             </div>
@@ -147,8 +170,8 @@ export function Path() {
               />
             </div>
 
-            <Button className="w-full gap-2 mt-8 py-6 text-base shadow-md" size="lg" onClick={generatePath}>
-               Tạo lộ trình chuẩn với AI <Route className="w-5 h-5" />
+            <Button className="w-full gap-2 mt-8 py-6 text-base shadow-md bg-[#5a5a40] hover:bg-[#4a4a35] text-white" size="lg" onClick={generatePath}>
+               Đồng bộ & Tạo lộ trình AI <Route className="w-5 h-5" />
             </Button>
           </CardContent>
         </Card>
@@ -157,20 +180,23 @@ export function Path() {
       {loading && (
         <div className="flex flex-col items-center justify-center h-64 space-y-6 text-[#5a5a40]">
           <Loader2 className="w-12 h-12 animate-spin text-[#d4a373]" />
-          <p className="font-semibold text-sm uppercase tracking-widest animate-pulse">Đang suy nghĩ lộ trình...</p>
+          <p className="font-semibold text-sm uppercase tracking-widest animate-pulse">Aria đang liên kết dữ liệu ứng dụng & tạo lộ trình...</p>
         </div>
       )}
 
-      {messages.length > 0 && (
+      {hasGeneratedRoadmap && (
         <div className="space-y-6 fade-in max-w-3xl mx-auto">
-           <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-[#5a5a40]/10 flex-wrap gap-4">
+           <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-[#5a5a40]/10 flex-wrap gap-4 sticky top-4 z-10">
              <div>
                <h3 className="font-serif font-bold text-[#5a5a40] text-lg">Lộ trình của bạn</h3>
-               <p className="text-xs text-[#5a5a40]/60">Trò chuyện với AI để sửa đổi nếu bạn muốn</p>
+               <p className="text-xs text-[#5a5a40]/60">Đã đồng bộ với cấp độ {progress.level} ({progress.targetLanguage.toUpperCase()})</p>
              </div>
-             <Button onClick={saveRoadmap} disabled={saved} className={cn("gap-2 shadow-sm", saved ? "bg-green-600 hover:bg-green-600" : "bg-[#d4a373] hover:bg-[#c29161]")}>
-               {saved ? <><CheckCircle2 className="w-4 h-4" /> Đã lưu</> : <><Save className="w-4 h-4" /> Lưu lộ trình</>}
-             </Button>
+             <div className="flex gap-2">
+               <Button onClick={() => setMessages([])} variant="outline" size="sm">Tạo lại</Button>
+               <Button onClick={saveRoadmap} disabled={saved} size="sm" className={cn("gap-2 shadow-sm", saved ? "bg-green-600 hover:bg-green-600 outline-none text-white border-transparent" : "bg-[#d4a373] hover:bg-[#c29161] text-white outline-none border-transparent")}>
+                 {saved ? <><CheckCircle2 className="w-4 h-4" /> Đã lưu lưu</> : <><Save className="w-4 h-4" /> Cập nhật lưu trữ</>}
+               </Button>
+             </div>
            </div>
 
            <div className="space-y-4">
@@ -181,6 +207,33 @@ export function Path() {
                    {msg.role === 'assistant' && idx === 1 && <div className="absolute top-0 left-0 w-full h-2 bg-[#d4a373]" />}
                    <CardContent className="p-5 md:p-8 markdown-body prose prose-slate max-w-none text-[#2d2d2a] prose-h2:font-serif prose-h2:text-[#5a5a40]">
                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                     
+                     {/* Suggest actions based on AI roadmap content, usually appended at the end of the AI's first deep response */}
+                     {msg.role === 'assistant' && idx === 1 && (
+                        <div className="mt-8 p-4 bg-[#f5f5f0] border border-[#5a5a40]/10 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between not-prose">
+                          <div>
+                            <h4 className="font-bold text-[#5a5a40] flex items-center gap-2 mb-1">
+                               ⚡ Thiết lập đã hoàn tất
+                            </h4>
+                            <p className="text-sm text-[#5a5a40]/70">Lộ trình của bạn đã được kết nối. Hãy bắt đầu hành động ngay!</p>
+                          </div>
+                          <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                            <Button 
+                              onClick={() => navigate('/lessons')}
+                              variant="outline"
+                              className="bg-white hover:border-[#d4a373] hover:text-[#d4a373] flex-1 md:flex-none"
+                            >
+                              <Book className="w-4 h-4 mr-2" /> Học Bài mới
+                            </Button>
+                            <Button 
+                              onClick={() => navigate('/teacher')}
+                              className="bg-[#5a5a40] hover:bg-[#4a4a35] text-white flex-1 md:flex-none"
+                            >
+                              <MessageSquare className="w-4 h-4 mr-2" /> Thực hành ngay
+                            </Button>
+                          </div>
+                        </div>
+                     )}
                    </CardContent>
                  </Card>
                );
@@ -189,7 +242,7 @@ export function Path() {
 
            {loadingChat && (
              <div className="flex items-center gap-3 text-[#5a5a40]/60 p-4">
-               <Loader2 className="w-5 h-5 animate-spin text-[#d4a373]" /> AI đang gửi phản hồi...
+               <Loader2 className="w-5 h-5 animate-spin text-[#d4a373]" /> Đang điều chỉnh lộ trình...
              </div>
            )}
 
@@ -199,20 +252,17 @@ export function Path() {
                onChange={(e) => setChatInput(e.target.value)}
                onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
                className="flex-1 p-3 bg-transparent outline-none ml-4 text-[#2d2d2a]"
-               placeholder="Ví dụ: Thêm 30 phút luyện nghe podcast..."
+               placeholder="Gõ yêu cầu: Đổi lịch vào cuối tuần, tải trọng bài tập nhẹ hơn..."
              />
-             <Button onClick={handleSendChat} disabled={!chatInput.trim() || loadingChat} className="rounded-full w-12 h-12 p-0 flex items-center justify-center bg-[#5a5a40]">
+             <Button onClick={handleSendChat} disabled={!chatInput.trim() || loadingChat} className="rounded-full w-12 h-12 p-0 flex items-center justify-center bg-[#5a5a40] text-white">
                 <Send className="w-4 h-4" />
              </Button>
            </div>
            
            <div ref={bottomRef} className="h-4" />
-
-           <div className="flex justify-center mt-8 pt-8 border-t border-[#5a5a40]/10">
-              <Button variant="outline" onClick={() => setMessages([])}>Tạo lại yêu cầu ban đầu</Button>
-           </div>
         </div>
       )}
     </div>
   );
 }
+

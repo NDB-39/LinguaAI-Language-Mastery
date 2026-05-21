@@ -23,6 +23,7 @@ export interface UserProgress {
   targetLanguage: string;
   nativeLanguage: string;
   geminiApiKey: string;
+  imageModelId: string;
   savedRoadmap: string | null;
   assistantHistory: Message[];
   teacherHistory: Message[];
@@ -33,6 +34,7 @@ interface StoreState {
   addXp: (amount: number) => void;
   setTargetLanguage: (lang: string) => void;
   setGeminiApiKey: (key: string) => void;
+  setImageModelId: (modelId: string) => void;
   setSavedRoadmap: (roadmap: string | null) => void;
   incrementStreak: () => void;
   setAssistantHistory: (messages: Message[]) => void;
@@ -50,6 +52,7 @@ export const useStore = create<StoreState>()(
         targetLanguage: 'en',
         nativeLanguage: 'vi',
         geminiApiKey: '',
+        imageModelId: 'flux',
         savedRoadmap: null,
         assistantHistory: [],
         teacherHistory: [],
@@ -64,6 +67,9 @@ export const useStore = create<StoreState>()(
       })),
       setGeminiApiKey: (key) => set((state) => ({
         progress: { ...state.progress, geminiApiKey: key }
+      })),
+      setImageModelId: (modelId) => set((state) => ({
+        progress: { ...state.progress, imageModelId: modelId }
       })),
       setSavedRoadmap: (roadmap) => set((state) => ({
         progress: { ...state.progress, savedRoadmap: roadmap }
