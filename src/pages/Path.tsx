@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { chatWithAria, Message } from '@/src/services/aiService';
-import { Loader2, Route, BookOpen, Clock, Target, Save, Send, CheckCircle2, MessageSquare, Book } from 'lucide-react';
+import { Loader2, Route, BookOpen, Clock, Target, Save, Send, CheckCircle2, MessageSquare, Book, Download } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useStore } from '@/src/store/useStore';
 import { cn } from '@/src/lib/utils';
@@ -96,6 +96,23 @@ export function Path() {
   const saveRoadmap = () => {
     setSavedRoadmap(JSON.stringify(messages));
     setSaved(true);
+  };
+
+  const downloadRoadmap = () => {
+    const roadmapContent = messages
+      .filter(m => m.role === 'assistant')
+      .map(m => m.content)
+      .join('\n\n---\n\n');
+
+    const blob = new Blob([roadmapContent], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `roadmap_${progress.targetLanguage}_level${progress.level}.md`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const hasGeneratedRoadmap = messages.length > 0;
@@ -192,9 +209,12 @@ export function Path() {
                <p className="text-xs text-[#5a5a40]/60">Đã đồng bộ với cấp độ {progress.level} ({progress.targetLanguage.toUpperCase()})</p>
              </div>
              <div className="flex gap-2">
+               <Button onClick={downloadRoadmap} variant="outline" size="sm" title="Tải xuống (.md)">
+                 <Download className="w-4 h-4" />
+               </Button>
                <Button onClick={() => setMessages([])} variant="outline" size="sm">Tạo lại</Button>
                <Button onClick={saveRoadmap} disabled={saved} size="sm" className={cn("gap-2 shadow-sm", saved ? "bg-green-600 hover:bg-green-600 outline-none text-white border-transparent" : "bg-[#d4a373] hover:bg-[#c29161] text-white outline-none border-transparent")}>
-                 {saved ? <><CheckCircle2 className="w-4 h-4" /> Đã lưu lưu</> : <><Save className="w-4 h-4" /> Cập nhật lưu trữ</>}
+                 {saved ? <><CheckCircle2 className="w-4 h-4" /> Đã lưu</> : <><Save className="w-4 h-4" /> Cập nhật lưu trữ</>}
                </Button>
              </div>
            </div>

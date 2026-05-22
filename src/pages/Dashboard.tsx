@@ -2,12 +2,26 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { useNavigate } from 'react-router-dom';
-import { PlayCircle, Target, Sparkles } from 'lucide-react';
+import { PlayCircle, Target, Sparkles, TrendingUp } from 'lucide-react';
 import { useStore } from '@/src/store/useStore';
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 export function Dashboard() {
   const navigate = useNavigate();
   const { progress } = useStore();
+
+  const last7Days = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const dateStr = d.toISOString().split('T')[0];
+    const dayLabel = d.toLocaleDateString('vi-VN', { weekday: 'short' });
+    const entry = progress.xpHistory?.find(x => x.date === dateStr);
+    return {
+      day: dayLabel,
+      date: dateStr,
+      xp: entry ? entry.xp : 0
+    };
+  });
 
   return (
     <div className="space-y-8">
@@ -42,6 +56,30 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <section className="mt-8">
+        <Card className="border border-[#5a5a40]/10 bg-white shadow-sm overflow-hidden">
+          <CardHeader className="bg-[#f5f5f0]/50 border-b border-[#5a5a40]/5 pb-4">
+            <CardTitle className="font-serif text-[#5a5a40] text-lg flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-[#d4a373]" /> XP 7 ngày qua
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={last7Days}>
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fill: '#5a5a40', fontSize: 12}} />
+                  <Tooltip 
+                    cursor={{fill: '#f5f5f0'}} 
+                    contentStyle={{borderRadius: '12px', border: '1px solid rgba(90, 90, 64, 0.1)', color: '#5a5a40', fontWeight: 'bold'}}
+                  />
+                  <Bar dataKey="xp" fill="#d4a373" radius={[6, 6, 0, 0]} barSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
       <section className="mt-8">
         <div className="flex items-center justify-between mb-6">

@@ -27,6 +27,7 @@ export interface UserProgress {
   savedRoadmap: string | null;
   assistantHistory: Message[];
   teacherHistory: Message[];
+  xpHistory?: { date: string, xp: number }[];
 }
 
 interface StoreState {
@@ -60,7 +61,24 @@ export const useStore = create<StoreState>()(
       addXp: (amount) => set((state) => {
         const newXp = state.progress.xp + amount;
         const newLevel = Math.floor(newXp / 100) + 1;
-        return { progress: { ...state.progress, xp: newXp, level: newLevel } };
+        
+        const today = new Date().toISOString().split('T')[0];
+        const history = state.progress.xpHistory || [];
+        const todayEntryIndex = history.findIndex(entry => entry.date === today);
+        let newHistory = [...history];
+        
+        if (todayEntryIndex >= 0) {
+          newHistory[todayEntryIndex] = { ...newHistory[todayEntryIndex], xp: newHistory[todayEntryIndex].xp + amount };
+        } else {
+          newHistory.push({ date: today, xp: amount });
+        }
+        
+        // Keep only the last 30 days of history to prevent unbounded growth
+        if (newHistory.length > 30) {
+          newHistory = newHistory.slice(-30);
+        }
+
+        return { progress: { ...state.progress, xp: newXp, level: newLevel, xpHistory: newHistory } };
       }),
       setTargetLanguage: (lang) => set((state) => ({
         progress: { ...state.progress, targetLanguage: lang }

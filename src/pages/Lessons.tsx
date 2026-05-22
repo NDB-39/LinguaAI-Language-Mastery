@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { askAI } from '@/src/services/aiService';
 import { useStore } from '@/src/store/useStore';
-import { Book, Loader2, PlayCircle, CheckCircle2, MessageSquare, Sparkles, Send, ArrowRight, ArrowLeft, Trophy, X } from 'lucide-react';
+import { Book, Loader2, PlayCircle, CheckCircle2, MessageSquare, Sparkles, Send, ArrowRight, ArrowLeft, Trophy, X, Lock } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Card, CardContent } from '@/src/components/ui/Card';
 import { cn } from '@/src/lib/utils';
@@ -10,10 +10,10 @@ import { Button } from '@/src/components/ui/Button';
 
 // Static levels list
 const LEVELS = [
-  { id: '1', level: 'Beginner', title: 'Nhập môn (Level 1)', desc: 'Làm quen với bảng chữ cái, phát âm cơ bản và từ vựng thông dụng giao tiếp hằng ngày.' },
-  { id: '2', level: 'Elementary', title: 'Sơ cấp (Level 2)', desc: 'Cấu trúc câu đơn giản, đàm thoại về chủ đề quen thuộc gia đình, sở thích.' },
-  { id: '3', level: 'Intermediate', title: 'Trung cấp (Level 3)', desc: 'Trình bày ý kiến cá nhân, ngữ pháp phức tạp, và kỹ năng viết thư.' },
-  { id: '4', level: 'Advanced', title: 'Cao cấp (Level 4)', desc: 'Sử dụng ngôn ngữ tự nhiên như người bản xứ, phân tích tài liệu học thuật.' },
+  { id: '1', level: 'Beginner', title: 'Nhập môn (Level 1)', desc: 'Làm quen với bảng chữ cái, phát âm cơ bản và từ vựng thông dụng giao tiếp hằng ngày.', req: 1 },
+  { id: '2', level: 'Elementary', title: 'Sơ cấp (Level 2)', desc: 'Cấu trúc câu đơn giản, đàm thoại về chủ đề quen thuộc gia đình, sở thích.', req: 5 },
+  { id: '3', level: 'Intermediate', title: 'Trung cấp (Level 3)', desc: 'Trình bày ý kiến cá nhân, ngữ pháp phức tạp, và kỹ năng viết thư.', req: 15 },
+  { id: '4', level: 'Advanced', title: 'Cao cấp (Level 4)', desc: 'Sử dụng ngôn ngữ tự nhiên như người bản xứ, phân tích tài liệu học thuật.', req: 30 },
 ];
 
 interface QuizQuestion {
@@ -323,29 +323,45 @@ TRẢ VỀ DUY NHẤT một mảng JSON (BẮT BUỘC ĐÚNG CÚ PHÁP ĐỂ CH�
 
       {!selectedLevel ? (
         <div className="grid gap-4 sm:grid-cols-2">
-          {LEVELS.map((item) => (
-            <Card 
-              key={item.id} 
-              className="hover:shadow-lg transition-all cursor-pointer group hover:-translate-y-1 border border-[#5a5a40]/10 hover:border-[#d4a373]/50"
-              onClick={() => loadLesson(item.level)}
-            >
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="bg-[#f5f5f0] p-3 rounded-2xl group-hover:bg-[#faedcd] transition-colors text-[#5a5a40] group-hover:text-[#d4a373]">
-                    <Book className="w-6 h-6" />
+          {LEVELS.map((item) => {
+            const isLocked = progress.level < item.req;
+            return (
+              <Card 
+                key={item.id} 
+                className={cn(
+                  "transition-all border border-[#5a5a40]/10",
+                  isLocked ? "opacity-75 cursor-not-allowed bg-gray-50 grayscale-[20%]" : "hover:shadow-lg cursor-pointer group hover:-translate-y-1 hover:border-[#d4a373]/50 bg-white"
+                )}
+                onClick={() => {
+                  if (!isLocked) loadLesson(item.level);
+                }}
+              >
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className={cn("p-3 rounded-2xl transition-colors text-[#5a5a40]", isLocked ? "bg-gray-200" : "bg-[#f5f5f0] group-hover:bg-[#faedcd] group-hover:text-[#d4a373]")}>
+                      {isLocked ? <Lock className="w-6 h-6 text-[#5a5a40]/50" /> : <Book className="w-6 h-6" />}
+                    </div>
+                    {!isLocked && (
+                      <CheckCircle2 className={cn("w-5 h-5", parseInt(item.id) < progress.level ? "text-green-500" : "text-[#5a5a40]/20")} />
+                    )}
                   </div>
-                  <CheckCircle2 className={cn("w-5 h-5", parseInt(item.id) < progress.level ? "text-green-500" : "text-[#5a5a40]/20")} />
-                </div>
-                <h3 className="font-bold text-lg text-[#5a5a40] mb-1">{item.title}</h3>
-                <p className="text-sm text-[#5a5a40]/70 line-clamp-2">{item.desc}</p>
-                
-                <div className="mt-4 flex items-center justify-between text-xs font-bold text-[#5a5a40]/50 uppercase tracking-wider">
-                  <span className="group-hover:text-[#d4a373] transition-colors">Bắt đầu học</span>
-                  <PlayCircle className="w-4 h-4 group-hover:text-[#d4a373] transition-colors" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <h3 className="font-bold text-lg text-[#5a5a40] mb-1">{item.title}</h3>
+                  <p className="text-sm text-[#5a5a40]/70 line-clamp-2 mb-4">{item.desc}</p>
+                  
+                  {isLocked ? (
+                    <div className="mt-4 flex items-center gap-2 text-xs font-bold text-red-500/80 uppercase tracking-wider bg-red-50 p-2 rounded-lg justify-center border border-red-100">
+                      <Lock className="w-4 h-4" /> Yêu cầu Level {item.req} (Hiện tại: {progress.level})
+                    </div>
+                  ) : (
+                    <div className="mt-4 flex items-center justify-between text-xs font-bold text-[#5a5a40]/50 uppercase tracking-wider">
+                      <span className="group-hover:text-[#d4a373] transition-colors">Bắt đầu học</span>
+                      <PlayCircle className="w-4 h-4 group-hover:text-[#d4a373] transition-colors" />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       ) : (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
