@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { askAI } from '@/src/services/aiService';
 import { useStore } from '@/src/store/useStore';
-import { Book, Loader2, PlayCircle, CheckCircle2, MessageSquare, Sparkles, Send, ArrowRight, ArrowLeft, Trophy, X, Lock } from 'lucide-react';
+import { Book, Loader2, PlayCircle, CheckCircle2, MessageSquare, Sparkles, Send, ArrowRight, ArrowLeft, Trophy, X, Lock, Layers, Repeat } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import confetti from 'canvas-confetti';
 import { Card, CardContent } from '@/src/components/ui/Card';
 import { cn } from '@/src/lib/utils';
 import { Button } from '@/src/components/ui/Button';
@@ -126,6 +127,13 @@ export function Lessons() {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
 
+  // Flashcard State
+  const [isFlashcardMode, setIsFlashcardMode] = useState(false);
+  const [isFlashcardLoading, setIsFlashcardLoading] = useState(false);
+  const [flashcards, setFlashcards] = useState<{word:string; meaning:string; example:string}[]>([]);
+  const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
+  const [isFlashcardFlipped, setIsFlashcardFlipped] = useState(false);
+
   const lessonContent = lessonHistory[currentLessonIndex] || '';
 
   const loadLesson = async (level: string) => {
@@ -134,6 +142,7 @@ export function Lessons() {
     setLessonHistory([]);
     setCurrentLessonIndex(0);
     setIsQuizMode(false);
+    setIsFlashcardMode(false);
 
     const targetLang = progress.targetLanguage;
     const roadmapContext = progress.savedRoadmap 
@@ -144,10 +153,10 @@ export function Lessons() {
 Bạn BẮT BUỘC CÓ MỘT ẢNH BÌA GIAO DIỆN (Hero Image) ở đầu bài học, và 2-3 CẬU TRÚC TỪ VỰNG HOẶC HỘI THOẠI CÓ ẢNH MINH HỌA.
 Để chèn ảnh, bạn hãy sử dụng dịch vụ pollinations.ai. Cú pháp Markdown:
 ![Mô tả ảnh](https://image.pollinations.ai/prompt/Mã%20hoá%20URL%20các%20từ%20khóa%20tiếng%20Anh%20mô%20tả%20ảnh?width=800&height=400&nologo=true&model=${progress.imageModelId || 'flux'})
-Ví dụ ảnh minh hoạ một lớp học: ![Classroom](https://image.pollinations.ai/prompt/students%20in%20a%20modern%20classroom%20illustration%20flat%20design?width=1200&height=675&nologo=true&model=${progress.imageModelId || 'flux'})
-Ví dụ minh hoạ từ vựng quả táo: ![Apple](https://image.pollinations.ai/prompt/a%20red%20apple%20minimalist%20flat%20design?width=400&height=400&nologo=true&model=${progress.imageModelId || 'flux'})`;
+
+LƯU Ý QUAN TRỌNG: KHÔNG YÊU CẦU AI VẼ CHỮ TRONG ẢNH. Ảnh chỉ nên dùng để minh họa ngữ cảnh tình huống, phong cảnh, con người hoặc đồ vật chung chung làm cho bài học sinh động hơn. TUYỆT ĐỐI KHÔNG dùng các từ khoá như "typography", "text", "written" trong prompt.`;
     const prompt = `Hãy soạn bài học đầu tiên (Bài 1) về: 
-1. 5 từ vựng/cụm từ thông dụng nhất ở cấp độ này kèm ví dụ (BẮT BUỘC có ảnh minh họa từ pollinations.ai cho mỗi từ vựng, kích thước width=400&height=400).
+1. 5 từ vựng/cụm từ thông dụng nhất ở cấp độ này kèm ví dụ (kèm 1-2 ảnh minh họa ngữ cảnh từ pollinations.ai, kích thước width=400&height=400).
 2. 1 điểm ngữ pháp trọng tâm và cách dùng. 
 3. 2 đoạn hội thoại ngắn để ứng dụng (kèm 1 ảnh minh hoạ ngữ cảnh).
 Hãy format bằng Markdown đẹp đẽ, có emoji minh hoạ, bảng biểu nếu cần. Trả lời hoàn toàn bằng tiếng Việt. Bắt đầu bằng tiêu đề "## Bài 1: [Tên chủ đề]" kèm ảnh bìa bài học (tỷ lệ 16:9 width=800&height=450).`;
@@ -174,9 +183,11 @@ Hãy format bằng Markdown đẹp đẽ, có emoji minh hoạ, bảng biểu n�
     const nextLessonNum = currentLessonIndex + 2;
     
     const system = `Bạn là chuyên gia giáo viên ngoại ngữ. Học sinh đang học cấp độ ${selectedLevel} ngôn ngữ mã '${targetLang}'.
-Bạn BẮT BUỘC CÓ MỘT ẢNH BÌA (Hero Image) ở đầu bài học, và vài ẢNH CỤ THỂ MINH HỌA TỪ VỰNG HOẶC TÌNH HUỐNG HỘI THOẠI.
+Bạn BẮT BUỘC CÓ MỘT ẢNH BÌA (Hero Image) ở đầu bài học, và vài ẢNH CỤ THỂ MINH HỌA TÌNH HUỐNG HỘI THOẠI.
 Để chèn ảnh, bạn hãy sử dụng dịch vụ pollinations.ai. Cú pháp Markdown:
-![Mô tả ảnh](https://image.pollinations.ai/prompt/Mã%20hoá%20URL%20các%20từ%20khóa%20tiếng%20Anh%20mô%20tả%20ảnh?width=800&height=400&nologo=true&model=${progress.imageModelId || 'flux'})`;
+![Mô tả ảnh](https://image.pollinations.ai/prompt/Mã%20hoá%20URL%20các%20từ%20khóa%20tiếng%20Anh%20mô%20tả%20ảnh?width=800&height=400&nologo=true&model=${progress.imageModelId || 'flux'})
+
+LƯU Ý QUAN TRỌNG: KHÔNG YÊU CẦU AI VẼ CHỮ TRONG ẢNH. Ảnh chỉ nên dùng để minh họa ngữ cảnh tình huống, phong cảnh, con người hoặc đồ vật chung chung làm cho bài học sinh động hơn. TUYỆT ĐỐI KHÔNG dùng các từ khoá như "typography", "text", "written" trong prompt.`;
     const prompt = `Đây là tóm tắt một phần nội dung bài học trước (Bài ${nextLessonNum - 1}):
 ---
 ${currentLessonSummary}
@@ -185,7 +196,7 @@ ${currentLessonSummary}
 Nhiệm vụ của bạn: Hãy thiết kế BÀI HỌC TIẾP THEO (Bài ${nextLessonNum}) cho học sinh này. 
 Nội dung bài mới phải nối tiếp logic, KHÔNG được trùng lặp với bài trước, và nâng cao hơn một chút.
 Yêu cầu bài mới:
-1. 5 từ vựng/cụm từ mới kèm ví dụ (BẮT BUỘC có ảnh minh họa từ pollinations.ai cho mỗi từ vựng, kích thước width=400&height=400).
+1. 5 từ vựng/cụm từ mới kèm ví dụ (kèm 1-2 ảnh minh họa ngữ cảnh từ pollinations.ai, kích thước width=400&height=400).
 2. 1 điểm ngữ pháp mới liên quan hoặc nâng cao hơn từ bài trước.
 3. 2 đoạn hội thoại ứng dụng mới (kèm 1 ảnh minh hoạ ngữ cảnh).
 Hãy format bằng Markdown đẹp, có emoji minh hoạ, bảng biểu nếu cần. Có dùng ảnh minh họa từ vựng/tình huống. Trả lời hoàn toàn bằng tiếng Việt. Bắt đầu bằng tiêu đề "## Bài ${nextLessonNum}: [Tên chủ đề]" kèm ảnh bìa (tỷ lệ 16:9 width=800&height=450).`;
@@ -305,10 +316,59 @@ TRẢ VỀ DUY NHẤT một mảng JSON (BẮT BUỘC ĐÚNG CÚ PHÁP ĐỂ CH�
       setShowExplanation(false);
     } else {
       setQuizFinished(true);
-      if (quizScore + (selectedOption === quizQuestions[currentQuizIndex].correctIndex ? 1 : 0) > 0) {
-        const earnedXp = (quizScore + (selectedOption === quizQuestions[currentQuizIndex].correctIndex ? 1 : 0)) * 10;
+      const finalScore = quizScore + (selectedOption === quizQuestions[currentQuizIndex].correctIndex ? 1 : 0);
+      if (finalScore > 0) {
+        const earnedXp = finalScore * 10;
         addXp(earnedXp);
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#d4a373', '#faedcd', '#5a5a40', '#4CAF50']
+        });
       }
+    }
+  };
+
+  const startFlashcards = async () => {
+    setIsFlashcardMode(true);
+    setIsFlashcardLoading(true);
+    setCurrentFlashcardIndex(0);
+    setIsFlashcardFlipped(false);
+    setFlashcards([]);
+    
+    const targetLang = progress.targetLanguage;
+    const system = `Bạn là trợ lý trích xuất từ vựng giáo dục. Ngôn ngữ: '${targetLang}'`;
+    let contextLesson = lessonContent.substring(0, 1500) || "";
+    const prompt = `Dựa vào bài học sau:
+${contextLesson}
+
+Hãy trích xuất TẤT CẢ các từ vựng mới và điểm ngữ pháp quan trọng trong nội dung trên thành dạng Flashcard.
+TRẢ VỀ DUY NHẤT một mảng JSON (BẮT BUỘC ĐÚNG CÚ PHÁP ĐỂ CHẠY JSON.parse).
+[
+  {
+    "word": "từ vựng hoặc cấu trúc (ở ngôn ngữ đích)",
+    "meaning": "nghĩa tiếng Việt",
+    "example": "ví dụ sử dụng"
+  }
+]`;
+
+    try {
+      const resp = await askAI(system, prompt);
+      const match = resp.match(/\[[\s\S]*\]/);
+      const jsonString = match ? match[0] : resp;
+      const cards = JSON.parse(jsonString);
+      if (Array.isArray(cards) && cards.length > 0) {
+        setFlashcards(cards);
+      } else {
+        throw new Error("Invalid format");
+      }
+    } catch (err) {
+      console.error("Flashcard generation failed:", err);
+      setIsFlashcardMode(false);
+      handleExpandLesson("Trích xuất cho tôi danh sách từ vựng của bài này do hệ thống thẻ đang lỗi");
+    } finally {
+      setIsFlashcardLoading(false);
     }
   };
 
@@ -473,6 +533,67 @@ TRẢ VỀ DUY NHẤT một mảng JSON (BẮT BUỘC ĐÚNG CÚ PHÁP ĐỂ CH�
                 ) : null}
               </CardContent>
             </Card>
+          ) : isFlashcardMode ? (
+            <Card className="border border-[#5a5a40]/20 bg-white/80 backdrop-blur">
+              <CardContent className="p-6 md:p-8">
+                 <div className="flex items-center justify-between mb-6 pb-6 border-b border-[#5a5a40]/10">
+                  <h2 className="font-serif text-2xl font-bold text-[#5a5a40] flex items-center gap-3">
+                    <Layers className="w-6 h-6 text-indigo-500" /> Thẻ ghi nhớ (Flashcards)
+                  </h2>
+                  <Button variant="ghost" size="sm" onClick={() => setIsFlashcardMode(false)}>
+                    <X className="w-4 h-4" /> Đóng
+                  </Button>
+                </div>
+                
+                {isFlashcardLoading ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-[#5a5a40]/50">
+                    <Loader2 className="w-8 h-8 animate-spin mb-4" />
+                    <p className="text-sm font-medium animate-pulse">Aria đang trích xuất từ vựng...</p>
+                  </div>
+                ) : flashcards.length > 0 ? (
+                  <div className="max-w-2xl mx-auto py-6 animate-in fade-in slide-in-from-right-4 duration-500" key={currentFlashcardIndex}>
+                    <div className="text-center font-bold text-[#5a5a40]/60 mb-4 tracking-widest text-xs uppercase">
+                      THẺ {currentFlashcardIndex + 1} / {flashcards.length}
+                    </div>
+                    
+                    <div className="relative w-full h-72 sm:h-80 cursor-pointer [perspective:1000px]" onClick={() => setIsFlashcardFlipped(!isFlashcardFlipped)}>
+                      <div className={cn("w-full h-full duration-500 relative transition-transform shadow-lg rounded-3xl", isFlashcardFlipped ? "[transform:rotateY(180deg)]" : "")} style={{ transformStyle: 'preserve-3d' }}>
+                        {/* Front (Word) */}
+                        <div className="absolute w-full h-full bg-white border border-[#5a5a40]/10 rounded-3xl flex flex-col items-center justify-center p-8 hover:border-[#d4a373] transition-all" style={{ backfaceVisibility: 'hidden' }}>
+                          <h3 className="text-4xl sm:text-5xl font-bold text-[#2d2d2a] mb-2 text-center break-words max-w-full leading-tight font-serif">{flashcards[currentFlashcardIndex].word}</h3>
+                          <div className="absolute bottom-6 flex items-center gap-2 text-sm font-medium text-[#5a5a40]/40 uppercase tracking-widest bg-[#f5f5f0] px-4 py-2 rounded-full">
+                            <Repeat className="w-4 h-4" /> Bấm lật
+                          </div>
+                        </div>
+                        {/* Back (Meaning & Example) */}
+                        <div className="absolute w-full h-full bg-indigo-50/50 border border-indigo-200 rounded-3xl flex flex-col items-center justify-center p-8" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                          <h3 className="text-2xl sm:text-3xl font-bold text-indigo-900 mb-6 text-center leading-snug">{flashcards[currentFlashcardIndex].meaning}</h3>
+                          {flashcards[currentFlashcardIndex].example && (
+                            <div className="bg-white/80 p-5 rounded-2xl text-center w-full max-w-md border border-indigo-100 shadow-sm">
+                              <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2 block">Ví dụ minh hoạ</span>
+                              <p className="text-indigo-950 italic text-lg">{flashcards[currentFlashcardIndex].example}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center mt-10">
+                      <Button variant="outline" disabled={currentFlashcardIndex === 0} onClick={() => { setCurrentFlashcardIndex(prev => prev - 1); setIsFlashcardFlipped(false); }}>
+                        <ArrowLeft className="w-4 h-4 mr-2" /> Trước
+                      </Button>
+                      <Button className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[120px]" disabled={currentFlashcardIndex === flashcards.length - 1} onClick={() => { setCurrentFlashcardIndex(prev => prev + 1); setIsFlashcardFlipped(false); }}>
+                        Tiếp <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-20 text-center text-red-500">
+                    <p>Không tìm thấy từ vựng nào.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           ) : (
           <Card className="border border-[#5a5a40]/20 bg-white/80 backdrop-blur">
             <CardContent className="p-6 md:p-8">
@@ -578,6 +699,15 @@ TRẢ VỀ DUY NHẤT một mảng JSON (BẮT BUỘC ĐÚNG CÚ PHÁP ĐỂ CH�
                           className="bg-white"
                         >
                           Ứng dụng thực tế
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={startFlashcards}
+                          disabled={isExpanding}
+                          className="bg-white hover:text-indigo-600 hover:border-indigo-600"
+                        >
+                          <Layers className="w-4 h-4 mr-2" /> Tạo Flashcards
                         </Button>
                       </div>
 

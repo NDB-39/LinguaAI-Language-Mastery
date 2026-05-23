@@ -3,10 +3,34 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { chatWithAria, Message } from '@/src/services/aiService';
-import { Loader2, Route, BookOpen, Clock, Target, Save, Send, CheckCircle2, MessageSquare, Book, Download } from 'lucide-react';
+import { Loader2, Route, BookOpen, Clock, Target, Save, Send, CheckCircle2, MessageSquare, Book, Download, Copy, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useStore } from '@/src/store/useStore';
 import { cn } from '@/src/lib/utils';
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className={cn(
+        "mt-4 transition-colors p-2 rounded-xl flex items-center gap-1.5 font-medium border border-[#5a5a40]/10",
+        copied ? "text-green-600 bg-green-50 border-green-200" : "text-[#5a5a40]/60 hover:text-[#5a5a40] hover:bg-[#f5f5f0]"
+      )}
+      title="Sao chép"
+    >
+      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+      <span className="text-xs">{copied ? "Đã chép" : "Copy nội dung"}</span>
+    </button>
+  );
+}
 
 export function Path() {
   const { progress, setSavedRoadmap } = useStore();
@@ -228,6 +252,12 @@ export function Path() {
                    <CardContent className="p-5 md:p-8 markdown-body prose prose-slate max-w-none text-[#2d2d2a] prose-h2:font-serif prose-h2:text-[#5a5a40]">
                      <ReactMarkdown>{msg.content}</ReactMarkdown>
                      
+                     {msg.role === 'assistant' && (
+                        <div className="flex justify-end border-t border-[#5a5a40]/10 mt-6 pt-2 not-prose">
+                          <CopyButton text={msg.content} />
+                        </div>
+                     )}
+
                      {/* Suggest actions based on AI roadmap content, usually appended at the end of the AI's first deep response */}
                      {msg.role === 'assistant' && idx === 1 && (
                         <div className="mt-8 p-4 bg-[#f5f5f0] border border-[#5a5a40]/10 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between not-prose">

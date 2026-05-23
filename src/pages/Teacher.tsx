@@ -1,11 +1,35 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/src/components/ui/Button';
 import { askTeacher, Message } from '@/src/services/aiService';
-import { Send, GraduationCap, User, Loader2, PlayCircle, KeyRound, AlertTriangle } from 'lucide-react';
+import { Send, GraduationCap, User, Loader2, PlayCircle, KeyRound, AlertTriangle, Copy, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/src/lib/utils';
 import { useStore } from '@/src/store/useStore';
 import { useNavigate } from 'react-router-dom';
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className={cn(
+        "mt-2 transition-colors p-1 rounded-full flex items-center gap-1",
+        copied ? "text-green-500" : "text-[#5a5a40]/40 hover:text-[#d4a373]"
+      )}
+      title="Sao chép"
+    >
+      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+      <span className="text-[10px] uppercase font-bold tracking-wider">{copied ? "Đã chép" : "Copy"}</span>
+    </button>
+  );
+}
 
 export function Teacher() {
   const { progress, setTeacherHistory } = useStore();
@@ -131,6 +155,11 @@ Hãy sử dụng format Markdown tuyệt đẹp. Luôn giữ thái độ chuẩn
                  : "bg-white border border-[#5a5a40]/10 shadow-sm rounded-bl-none text-[#2d2d2a]"
              )}>
                 <ReactMarkdown>{msg.content}</ReactMarkdown>
+                {msg.role === 'assistant' && (
+                  <div className="flex justify-end border-t border-[#5a5a40]/10 mt-3 pt-1">
+                    <CopyButton text={msg.content} />
+                  </div>
+                )}
              </div>
 
              {msg.role === 'user' && (
