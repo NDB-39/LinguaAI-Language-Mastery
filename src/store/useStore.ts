@@ -24,6 +24,9 @@ export interface UserProgress {
   nativeLanguage: string;
   geminiApiKey: string;
   imageModelId: string;
+  customImageModels?: string[];
+  textModelId: string;
+  customTextModels?: string[];
   savedRoadmap: string | null;
   assistantHistory: Message[];
   teacherHistory: Message[];
@@ -36,6 +39,9 @@ interface StoreState {
   setTargetLanguage: (lang: string) => void;
   setGeminiApiKey: (key: string) => void;
   setImageModelId: (modelId: string) => void;
+  setCustomImageModels: (models: string[]) => void;
+  setTextModelId: (modelId: string) => void;
+  setCustomTextModels: (models: string[]) => void;
   setSavedRoadmap: (roadmap: string | null) => void;
   incrementStreak: () => void;
   setAssistantHistory: (messages: Message[]) => void;
@@ -54,6 +60,7 @@ export const useStore = create<StoreState>()(
         nativeLanguage: 'vi',
         geminiApiKey: '',
         imageModelId: 'flux',
+        textModelId: 'openai',
         savedRoadmap: null,
         assistantHistory: [],
         teacherHistory: [],
@@ -88,6 +95,15 @@ export const useStore = create<StoreState>()(
       })),
       setImageModelId: (modelId) => set((state) => ({
         progress: { ...state.progress, imageModelId: modelId }
+      })),
+      setCustomImageModels: (models) => set((state) => ({
+        progress: { ...state.progress, customImageModels: models }
+      })),
+      setTextModelId: (modelId) => set((state) => ({
+        progress: { ...state.progress, textModelId: modelId }
+      })),
+      setCustomTextModels: (models) => set((state) => ({
+        progress: { ...state.progress, customTextModels: models }
       })),
       setSavedRoadmap: (roadmap) => set((state) => ({
         progress: { ...state.progress, savedRoadmap: roadmap }

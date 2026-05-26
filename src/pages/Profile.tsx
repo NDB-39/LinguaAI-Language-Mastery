@@ -7,7 +7,7 @@ import { get, set } from 'idb-keyval';
 import { cn } from '@/src/lib/utils';
 
 export function Profile() {
-  const { progress, setTargetLanguage, setGeminiApiKey, setImageModelId } = useStore();
+  const { progress, setTargetLanguage, setGeminiApiKey, setImageModelId, setCustomImageModels, setTextModelId, setCustomTextModels } = useStore();
   const [dbStatus, setDbStatus] = useState<'checking' | 'active' | 'inactive'>('checking');
   const [apiActivity, setApiActivity] = useState<{
     gemini: 'idle' | 'generating_text' | 'generating_image',
@@ -110,18 +110,76 @@ export function Profile() {
           </div>
 
           <div className="space-y-3 pt-4 border-t border-[#5a5a40]/10">
+            <label className="text-xs uppercase tracking-widest font-bold text-[#5a5a40]/60">Danh sách Model ID Nội Suy (Text) tùy chỉnh</label>
+            <input 
+              type="text"
+              placeholder="VD: openai, claude, mistral, llama"
+              className="w-full p-4 border border-[#5a5a40]/20 rounded-2xl focus:ring-2 focus:ring-[#5a5a40] focus:border-transparent bg-[#f5f5f0] text-[#2d2d2a] font-medium outline-none transition-all"
+              value={progress.customTextModels?.join(', ') || ''}
+              onChange={(e) => setCustomTextModels(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+            />
+            <p className="text-xs text-[#5a5a40]/60">Nhập danh sách ID các model Text cách nhau bằng dấu phẩy. Nếu để trống sẽ sử dụng mặc định.</p>
+          </div>
+
+          <div className="space-y-3 pt-4 border-t border-[#5a5a40]/10">
+            <label className="text-xs uppercase tracking-widest font-bold text-[#5a5a40]/60">Pollinations Text Model (Tùy chọn mô hình Trợ lý Aria)</label>
+            <select 
+              className="w-full p-4 border border-[#5a5a40]/20 rounded-2xl focus:ring-2 focus:ring-[#5a5a40] focus:border-transparent bg-[#f5f5f0] text-[#2d2d2a] font-medium outline-none transition-all flex items-center justify-between"
+              value={progress.textModelId || 'openai'}
+              onChange={(e) => setTextModelId(e.target.value)}
+            >
+              {progress.customTextModels && progress.customTextModels.length > 0 ? (
+                progress.customTextModels.map(model => (
+                  <option key={model} value={model}>{model}</option>
+                ))
+              ) : (
+                <>
+                  <option value="openai">OpenAI (Gpt-4o, Mặc định)</option>
+                  <option value="openai-large">OpenAI Large (Gpt-4o-large)</option>
+                  <option value="openai-reasoning">OpenAI Reasoning (o1-mini)</option>
+                  <option value="claude">Claude (Claude-3.5-Sonnet)</option>
+                  <option value="mistral">Mistral (Nemo)</option>
+                  <option value="mistral-large">Mistral Large (Large-2407)</option>
+                  <option value="llama">Llama (Llama-3.1-8B)</option>
+                </>
+              )}
+            </select>
+            <p className="text-xs text-[#5a5a40]/60">Chọn model cho trợ lý AI Aria (Pollinations.ai).</p>
+          </div>
+
+          <div className="space-y-3 pt-4 border-t border-[#5a5a40]/10">
+            <label className="text-xs uppercase tracking-widest font-bold text-[#5a5a40]/60">Danh sách Model ID Sinh Ảnh tùy chỉnh</label>
+            <input 
+              type="text"
+              placeholder="VD: flux, flux-realism, midjourney"
+              className="w-full p-4 border border-[#5a5a40]/20 rounded-2xl focus:ring-2 focus:ring-[#5a5a40] focus:border-transparent bg-[#f5f5f0] text-[#2d2d2a] font-medium outline-none transition-all"
+              value={progress.customImageModels?.join(', ') || ''}
+              onChange={(e) => setCustomImageModels(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+            />
+            <p className="text-xs text-[#5a5a40]/60">Nhập danh sách ID các model cách nhau bằng dấu phẩy. Nếu để trống sẽ sử dụng danh sách mặc định.</p>
+          </div>
+
+          <div className="space-y-3 pt-4 border-t border-[#5a5a40]/10">
             <label className="text-xs uppercase tracking-widest font-bold text-[#5a5a40]/60">Pollinations Image Model (Tùy chọn render ảnh)</label>
             <select 
               className="w-full p-4 border border-[#5a5a40]/20 rounded-2xl focus:ring-2 focus:ring-[#5a5a40] focus:border-transparent bg-[#f5f5f0] text-[#2d2d2a] font-medium outline-none transition-all flex items-center justify-between"
               value={progress.imageModelId || 'flux'}
               onChange={(e) => setImageModelId(e.target.value)}
             >
-              <option value="flux">Flux (Mặc định, cân bằng)</option>
-              <option value="flux-realism">Flux Realism (Chân thực)</option>
-              <option value="flux-anime">Flux Anime (Hoạt hình Anime)</option>
-              <option value="flux-3d">Flux 3D (Đồ họa 3D)</option>
-              <option value="any-dark">Any Dark (Tối / Hơi hướng nghệ thuật)</option>
-              <option value="turbo">Turbo (Tạo siêu tốc)</option>
+              {progress.customImageModels && progress.customImageModels.length > 0 ? (
+                progress.customImageModels.map(model => (
+                  <option key={model} value={model}>{model}</option>
+                ))
+              ) : (
+                <>
+                  <option value="flux">Flux (Mặc định, cân bằng)</option>
+                  <option value="flux-realism">Flux Realism (Chân thực)</option>
+                  <option value="flux-anime">Flux Anime (Hoạt hình Anime)</option>
+                  <option value="flux-3d">Flux 3D (Đồ họa 3D)</option>
+                  <option value="any-dark">Any Dark (Tối / Hơi hướng nghệ thuật)</option>
+                  <option value="turbo">Turbo (Tạo siêu tốc)</option>
+                </>
+              )}
             </select>
             <p className="text-xs text-[#5a5a40]/60">Chọn model phù hợp nếu model hiện tại vẽ sai chữ (Lưu ý: model Flux-based thường tốt nhất cho chữ).</p>
           </div>

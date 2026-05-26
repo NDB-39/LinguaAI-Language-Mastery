@@ -38,7 +38,7 @@ export async function chatWithAria(messages: Message[]): Promise<string> {
       },
       body: JSON.stringify({
         messages,
-        model: 'openai',
+        model: useStore.getState().progress.textModelId || 'openai',
         seed: Math.floor(Math.random() * 1000000)
       })
     });

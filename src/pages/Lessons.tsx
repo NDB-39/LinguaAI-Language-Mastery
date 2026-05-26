@@ -116,6 +116,7 @@ export function Lessons() {
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanding, setIsExpanding] = useState(false);
   const [followUpQuery, setFollowUpQuery] = useState('');
+  const [difficulty, setDifficulty] = useState<'Dễ' | 'Trung bình' | 'Khó'>('Trung bình');
 
   // Quiz State
   const [isQuizMode, setIsQuizMode] = useState(false);
@@ -149,17 +150,17 @@ export function Lessons() {
       ? `\n\nHọc sinh đã có một lộ trình học tập mục tiêu như sau, bạn hãy thiết kế bài học DỰA TRÊN LỘ TRÌNH ĐÓ và đừng đi lệch trọng tâm:\n${progress.savedRoadmap.substring(0, 1000)}...` 
       : "";
 
-    const system = `Bạn là chuyên gia giáo viên ngoại ngữ. Nhiệm vụ của bạn là soạn một bài học tóm tắt cực kì sinh động và dễ hiểu cho cấp độ ${level} ngôn ngữ mã '${targetLang}'.${roadmapContext}
+    const system = `Bạn là chuyên gia giáo viên ngoại ngữ. Nhiệm vụ của bạn là soạn một bài học tóm tắt cực kì sinh động, mức độ **${difficulty.toUpperCase()}** và dễ hiểu cho cấp độ ${level} ngôn ngữ mã '${targetLang}'.${roadmapContext}
 Bạn BẮT BUỘC CÓ MỘT ẢNH BÌA GIAO DIỆN (Hero Image) ở đầu bài học, và 2-3 CẬU TRÚC TỪ VỰNG HOẶC HỘI THOẠI CÓ ẢNH MINH HỌA.
 Để chèn ảnh, bạn hãy sử dụng dịch vụ pollinations.ai. Cú pháp Markdown:
 ![Mô tả ảnh](https://image.pollinations.ai/prompt/Mã%20hoá%20URL%20các%20từ%20khóa%20tiếng%20Anh%20mô%20tả%20ảnh?width=800&height=400&nologo=true&model=${progress.imageModelId || 'flux'})
 
 LƯU Ý QUAN TRỌNG: KHÔNG YÊU CẦU AI VẼ CHỮ TRONG ẢNH. Ảnh chỉ nên dùng để minh họa ngữ cảnh tình huống, phong cảnh, con người hoặc đồ vật chung chung làm cho bài học sinh động hơn. TUYỆT ĐỐI KHÔNG dùng các từ khoá như "typography", "text", "written" trong prompt.`;
     const prompt = `Hãy soạn bài học đầu tiên (Bài 1) về: 
-1. 5 từ vựng/cụm từ thông dụng nhất ở cấp độ này kèm ví dụ (kèm 1-2 ảnh minh họa ngữ cảnh từ pollinations.ai, kích thước width=400&height=400).
-2. 1 điểm ngữ pháp trọng tâm và cách dùng. 
+1. 5 từ vựng/cụm từ (mức độ ${difficulty}) thông dụng nhất ở cấp độ này kèm ví dụ (kèm 1-2 ảnh minh họa ngữ cảnh từ pollinations.ai, kích thước width=400&height=400).
+2. 1 điểm ngữ pháp trọng tâm và cách dùng (điều chỉnh độ phức tạp theo mức độ ${difficulty}). 
 3. 2 đoạn hội thoại ngắn để ứng dụng (kèm 1 ảnh minh hoạ ngữ cảnh).
-Hãy format bằng Markdown đẹp đẽ, có emoji minh hoạ, bảng biểu nếu cần. Trả lời hoàn toàn bằng tiếng Việt. Bắt đầu bằng tiêu đề "## Bài 1: [Tên chủ đề]" kèm ảnh bìa bài học (tỷ lệ 16:9 width=800&height=450).`;
+Hãy format bằng Markdown đẹp đẽ, có emoji minh hoạ, bảng biểu nếu cần. Trả lời hoàn toàn bằng tiếng Việt. Bắt đầu bằng tiêu đề "## Bài 1: [Tên chủ đề] - Mức độ: ${difficulty}" kèm ảnh bìa bài học (tỷ lệ 16:9 width=800&height=450).`;
     
     try {
       const content = await askAI(system, prompt);
@@ -182,7 +183,7 @@ Hãy format bằng Markdown đẹp đẽ, có emoji minh hoạ, bảng biểu n�
     const currentLessonSummary = lessonHistory[currentLessonIndex].substring(0, 1500); // Context
     const nextLessonNum = currentLessonIndex + 2;
     
-    const system = `Bạn là chuyên gia giáo viên ngoại ngữ. Học sinh đang học cấp độ ${selectedLevel} ngôn ngữ mã '${targetLang}'.
+    const system = `Bạn là chuyên gia giáo viên ngoại ngữ. Học sinh đang học cấp độ ${selectedLevel} ngôn ngữ mã '${targetLang}' ở mức độ khó: **${difficulty.toUpperCase()}**.
 Bạn BẮT BUỘC CÓ MỘT ẢNH BÌA (Hero Image) ở đầu bài học, và vài ẢNH CỤ THỂ MINH HỌA TÌNH HUỐNG HỘI THOẠI.
 Để chèn ảnh, bạn hãy sử dụng dịch vụ pollinations.ai. Cú pháp Markdown:
 ![Mô tả ảnh](https://image.pollinations.ai/prompt/Mã%20hoá%20URL%20các%20từ%20khóa%20tiếng%20Anh%20mô%20tả%20ảnh?width=800&height=400&nologo=true&model=${progress.imageModelId || 'flux'})
@@ -193,13 +194,13 @@ LƯU Ý QUAN TRỌNG: KHÔNG YÊU CẦU AI VẼ CHỮ TRONG ẢNH. Ảnh chỉ n
 ${currentLessonSummary}
 ---
 
-Nhiệm vụ của bạn: Hãy thiết kế BÀI HỌC TIẾP THEO (Bài ${nextLessonNum}) cho học sinh này. 
+Nhiệm vụ của bạn: Hãy thiết kế BÀI HỌC TIẾP THEO (Bài ${nextLessonNum}) cho học sinh này với mức độ **${difficulty}**. 
 Nội dung bài mới phải nối tiếp logic, KHÔNG được trùng lặp với bài trước, và nâng cao hơn một chút.
 Yêu cầu bài mới:
-1. 5 từ vựng/cụm từ mới kèm ví dụ (kèm 1-2 ảnh minh họa ngữ cảnh từ pollinations.ai, kích thước width=400&height=400).
-2. 1 điểm ngữ pháp mới liên quan hoặc nâng cao hơn từ bài trước.
+1. 5 từ vựng/cụm từ mới (phù hợp độ khó ${difficulty}) kèm ví dụ (kèm 1-2 ảnh minh họa ngữ cảnh từ pollinations.ai, kích thước width=400&height=400).
+2. 1 điểm ngữ pháp mới liên quan hoặc nâng cao hơn từ bài trước (điều chỉnh độ phức tạp theo mức ${difficulty}).
 3. 2 đoạn hội thoại ứng dụng mới (kèm 1 ảnh minh hoạ ngữ cảnh).
-Hãy format bằng Markdown đẹp, có emoji minh hoạ, bảng biểu nếu cần. Có dùng ảnh minh họa từ vựng/tình huống. Trả lời hoàn toàn bằng tiếng Việt. Bắt đầu bằng tiêu đề "## Bài ${nextLessonNum}: [Tên chủ đề]" kèm ảnh bìa (tỷ lệ 16:9 width=800&height=450).`;
+Hãy format bằng Markdown đẹp, có emoji minh hoạ, bảng biểu nếu cần. Có dùng ảnh minh họa từ vựng/tình huống. Trả lời hoàn toàn bằng tiếng Việt. Bắt đầu bằng tiêu đề "## Bài ${nextLessonNum}: [Tên chủ đề] - Mức độ: ${difficulty}" kèm ảnh bìa (tỷ lệ 16:9 width=800&height=450).`;
 
     try {
       const content = await askAI(system, prompt);
@@ -374,11 +375,28 @@ TRẢ VỀ DUY NHẤT một mảng JSON (BẮT BUỘC ĐÚNG CÚ PHÁP ĐỂ CH�
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between mb-8">
-         <h1 className="font-serif text-3xl font-bold text-[#5a5a40]">Bài học của bạn</h1>
-         <span className="bg-[#faedcd] text-[#d4a373] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest border border-[#d4a373]/20">
-           {progress.targetLanguage.toUpperCase()}
-         </span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+           <h1 className="font-serif text-3xl font-bold text-[#5a5a40]">Bài học của bạn</h1>
+           <span className="bg-[#faedcd] text-[#d4a373] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest border border-[#d4a373]/20 w-fit">
+             {progress.targetLanguage.toUpperCase()}
+           </span>
+         </div>
+         
+         <div className="flex bg-[#f5f5f0] p-1 rounded-xl border border-[#5a5a40]/10 shrink-0 self-start sm:self-auto overflow-x-auto">
+          {(['Dễ', 'Trung bình', 'Khó'] as const).map(d => (
+            <button 
+              key={d}
+              onClick={() => setDifficulty(d)}
+              className={cn(
+                "px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider rounded-lg transition-all whitespace-nowrap",
+                difficulty === d ? "bg-white text-[#5a5a40] shadow-sm" : "text-[#5a5a40]/40 hover:text-[#5a5a40]/80 hover:bg-[#5a5a40]/5"
+              )}
+            >
+              {d}
+            </button>
+          ))}
+         </div>
       </div>
 
       {!selectedLevel ? (
